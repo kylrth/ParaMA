@@ -9,6 +9,10 @@ from param import Parameter
 from morphanalyzer import MorphAnalyzer
 
 def read_word_freq_list(infile):
+    """Read a file where each line contains a word and its frequency count, tab-separated.
+    
+    Returns a list of tuples of the form (word, freq).
+    """
     fin = open(infile, 'r', -1, 'utf-8')
     wordlist = []
     for line in fin:
@@ -21,6 +25,7 @@ def read_word_freq_list(infile):
     return wordlist
 
 def save_segmentations(word_segs, outfile):
+    """Write segmentations to a file."""
     fout = open(outfile, 'w', -1, 'utf-8')
     for word, (seg, components) in word_segs:
         seg_str = ' '.join(seg)
@@ -29,6 +34,7 @@ def save_segmentations(word_segs, outfile):
     fout.close()
 
 def run(infile, outfile, params):
+    """Run morphological segmentation on frequency data in `infile`, and save results in `outfile`."""
     print('| Reading data...')
     word_freq_list = read_word_freq_list(infile)
     print('| Analyzing...')
@@ -42,6 +48,7 @@ def run(infile, outfile, params):
     print('| Done!')
 
 if __name__ == '__main__':
+    """Command line utility to run morphological segmentation on specified files, with specified parameters."""
     params = Parameter()
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('infile', help='The input file containing a word list with line format: <word> <freq>')
