@@ -140,7 +140,7 @@ def filter_afxes(affix_root_len_dist, top_N=50):
     return filtered_affixes
 
 def gen_N_best_suffix(word_dict, min_stem_len=3, max_suf_len=4, min_suf_freq=10, best_N=50):
-    """Get the `best_N` best suffixes according to """
+    """Get the `best_N` best suffixes according to maximum likelihood."""
     suffix_stem_len_dist = gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq)
     best_suffix_list = filter_afxes(suffix_stem_len_dist, best_N)
     return best_suffix_list
