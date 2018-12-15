@@ -5,6 +5,7 @@ Created on Jun 11, 2018
 '''
 
 from reliableroot import is_reliable_root
+from tqdm import tqdm
 
 def get_suffix_type_score(suffix_tuples):
     suffix_type_dict = {}
@@ -44,16 +45,7 @@ def prune_paradigms(paradigm_dict, reliable_suffix_tuples, suffix_type_score, si
     pruned_paradigm_dict = {}
     root_suffix_set_dict = {}
     pruned_words = []
-    print('--total: %s' % (len(paradigm_dict)))
-    count = 0
-    percentage = 1
-    next_count = int(len(paradigm_dict) * percentage / 10)
-    for word, derived_word_list in paradigm_dict.items():
-        count += 1
-        if count == next_count:
-            print('--%s finished.' % (percentage/10))
-            percentage += 1
-            next_count = int(len(paradigm_dict) * percentage / 10)
+    for word, derived_word_list in tqdm(paradigm_dict.items()):
         suffix_set = set([x[2] for x in derived_word_list])
         suffix_tuple = tuple(sorted(suffix_set))
         if not word in word_dict: 
