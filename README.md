@@ -51,3 +51,7 @@ Here's a list of other improvements I'd like to make, outside the scope of what 
 - Improve speed by refactoring the code a lot.
 - Give objects semantically meaningful names. (E.g. "prune_suffix_tuple" -> "prune_suffixes")
 - Rewrite segmentation.py.
+
+## License
+
+The original work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). Changes have been made to the work.
