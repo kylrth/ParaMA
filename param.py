@@ -5,13 +5,10 @@ Created on Jun 11, 2018
 '''
 
 class Parameter():
-    '''
-    '''
-
+    """Class containing parameters to be passed to the experiment function."""
 
     def __init__(self):
-        '''
-        '''
+        """Set default parameters."""
         # Main Parameters
         self.UseTransRules = True
         self.DoPruning = True
@@ -33,6 +30,7 @@ class Parameter():
         
         
     def print_all(self):
+        """Print the contents of all parameters."""
         print('--------------Parameters-------------')
         print('UseTransRules: %s' % self.UseTransRules)
         print('DoPruning: %s' % self.DoPruning)
