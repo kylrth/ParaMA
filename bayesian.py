@@ -13,6 +13,7 @@ def feature(root, suffix):
     if suffix == '$': return ('$', suffix)
     return (root[-1], suffix[0])
 
+
 def get_initial_parameters(token_segs):
     """Calculates the probabilities of roots, suffixes, and transitions given their frequency in `token_segs`.
     
@@ -61,6 +62,7 @@ def get_initial_parameters(token_segs):
 
     return probstems, probsuffix, probtrans
 
+
 def calc_seg_prob(ts, probroots, probsuffix, probtrans):
     """Calculate the score of a single segmentation `ts`, based on the probabilities given by the other parameters.
     
@@ -74,6 +76,7 @@ def calc_seg_prob(ts, probroots, probsuffix, probtrans):
     if root in probroots and suffix in probsuffix and (trans, feat) in probtrans:
         score = probroots[root] * probsuffix[suffix] * probtrans[(trans, feat)]
     return score
+
 
 def calc_seg_probs(token_segs, probroots, probsuffix, probtrans):
     """Calculate the scores of segmentations in `token_segs`, based on the probabilities given by the other parameters.
@@ -91,6 +94,7 @@ def calc_seg_probs(token_segs, probroots, probsuffix, probtrans):
         token_seg_probs.append((token, seg_probs))
     return token_seg_probs
 
+
 def do_step1_segmention(token_segs, probroots, probsuffix, probtrans):
     """Find the most likely token segmentation among those listed for each token."""
     resolved_segs = []
@@ -104,6 +108,7 @@ def do_step1_segmention(token_segs, probroots, probsuffix, probtrans):
                 max_score = score
         resolved_segs.append(best_ts)
     return resolved_segs
+
 
 def estimate_suffix_probability(suffix_freq_dict):
     """Convert a frequency dictionary into a probability dictionary by normalizing."""

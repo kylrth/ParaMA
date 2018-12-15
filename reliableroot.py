@@ -4,6 +4,7 @@ Created on Jun 11, 2018
 @author: xh
 '''
 
+
 def is_reliable_root(root, freq):
     """Determines whether a root is reliable given its frequency and length.
     
@@ -18,18 +19,3 @@ def is_reliable_root(root, freq):
     if root_len == 6 and freq < 10: return False
     if freq < 3: return False
     return True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

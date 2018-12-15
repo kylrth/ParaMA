@@ -4,9 +4,11 @@ Created on Jun 12, 2018
 @author: xh
 '''
 
+
 import argparse
 from param import Parameter
 from morphanalyzer import MorphAnalyzer
+
 
 def read_word_freq_list(infile):
     """Read a file where each line contains a word and its frequency count, tab-separated.
@@ -24,6 +26,7 @@ def read_word_freq_list(infile):
     fin.close()
     return wordlist
 
+
 def save_segmentations(word_segs, outfile):
     """Write segmentations to a file."""
     fout = open(outfile, 'w', -1, 'utf-8')
@@ -32,6 +35,7 @@ def save_segmentations(word_segs, outfile):
         component_str = ' '.join([' '.join(component) for component in components])
         fout.write('%s\t%s\t%s\n' % (word, seg_str, component_str))
     fout.close()
+
 
 def run(infile, outfile, params):
     """Run morphological segmentation on frequency data in `infile`, and save results in `outfile`."""
@@ -46,6 +50,7 @@ def run(infile, outfile, params):
     print('| Saving result...')
     save_segmentations(zip(word_list, word_segs), outfile)
     print('| Done!')
+
 
 if __name__ == '__main__':
     """Command line utility to run morphological segmentation on specified files, with specified parameters."""

@@ -4,7 +4,9 @@ Created on Jun 11, 2018
 @author: xh
 '''
 
+
 from reliableroot import is_reliable_root
+
 
 def create_paradigms(token_structs):
     """Create a dictionary of paradigms (maps from roots to their possible affixated forms).
@@ -27,6 +29,7 @@ def create_paradigms(token_structs):
         else: paradigm_dict[root] = [(word, trans, suffix, morph)]
     return paradigm_dict, atomic_word_dict
 
+
 def get_paradigm_suffix_sets(paradigm_dict):
     """For each root, collect the set of possible suffixes."""
     root_suffix_tuple_list = []
@@ -34,6 +37,7 @@ def get_paradigm_suffix_sets(paradigm_dict):
         suffix_set = set([x[2] for x in derived_word_list])  # suffixes are the second element; see create_paradigms
         root_suffix_tuple_list.append((root, suffix_set))
     return root_suffix_tuple_list
+
 
 def filter_rare_suffix_from_suffix_set(root_suffix_set_list, min_freq):
     """Find suffixes that occur with frequency less than `min_freq`, and remove them from all paradigms."""
@@ -61,6 +65,7 @@ def filter_rare_suffix_from_suffix_set(root_suffix_set_list, min_freq):
     
     return filtered_root_suffix_set_list
 
+
 def stats_suffix_sets(root_suffix_set_list, word_dict):
     """Create a map from tuples of suffixes in a paradigm to lists of roots supporting the paradigm, along with their
     frequencies. Discard roots that are deemed unreliable by is_reliable_root."""
@@ -72,6 +77,7 @@ def stats_suffix_sets(root_suffix_set_list, word_dict):
         if suffix_tuple in suffix_tuple_dict: suffix_tuple_dict[suffix_tuple].append((root, freq))
         else: suffix_tuple_dict[suffix_tuple] = [(root, freq)]
     return suffix_tuple_dict
+
 
 def filter_suffix_tuple(suffix_tuple_dict, min_support, min_tuple_size):
     """Remove suffix sets that don't meet the robustness or productivity requirements.
@@ -91,6 +97,7 @@ def filter_suffix_tuple(suffix_tuple_dict, min_support, min_tuple_size):
         filtered_suffix_tuple_dict[suffix_tuple] = root_list
     return filtered_suffix_tuple_dict
 
+
 def stats_single_suffix_type_freq(suffix_tuple_dict):
     """Collect a frequency dictionary for suffixes, where the frequency is the number of words the suffix applies to."""
     suffix_dict = {}
@@ -101,6 +108,7 @@ def stats_single_suffix_type_freq(suffix_tuple_dict):
             else: suffix_dict[suffix] = freq
     return suffix_dict
 
+
 def get_single_suffix_tuples(suffix_type_dict, suffix_tuple_dict):
     """Get just the paradigms with a single suffix."""
     valid_singleton_dict = {}
@@ -110,6 +118,7 @@ def get_single_suffix_tuples(suffix_type_dict, suffix_tuple_dict):
         if not suffix in suffix_type_dict: continue
         valid_singleton_dict[suffix_tuple] = suffix_tuple_dict[suffix_tuple]
     return valid_singleton_dict
+
 
 def get_reliable_suffix_tuples(root_suffix_set_list, word_dict, min_support, min_tuple_size, min_suffix_freq):
     """Gets suffix tuples (sets of suffixes of a particular paradigm) where the requirements for reliability are met.
@@ -138,19 +147,3 @@ def get_reliable_suffix_tuples(root_suffix_set_list, word_dict, min_support, min
     single_suffix_tuple_dict = get_single_suffix_tuples(suffix_type_dict, suffix_tuple_dict)
 
     return filtered_suffix_tuple_dict, single_suffix_tuple_dict, suffix_type_dict
-
-def discover_maximal_paradigm():
-    """Do nothing."""
-    return
-
-
-
-
-
-
-
-
-
-
-
-

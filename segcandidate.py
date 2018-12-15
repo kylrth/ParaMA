@@ -127,6 +127,7 @@ class TokenAnalyzer:
             token_segs.append(segs)
         return token_segs
 
+
 def get_morph_dict(word_dict, min_stem_len):
     """Create a dictionary mapping words without the last character to the possible words represented."""
     morph_dict = {}
@@ -143,17 +144,3 @@ def get_morph_dict(word_dict, min_stem_len):
         if morph in morph_dict: morph_dict[morph].append(word)
         else: morph_dict[morph] = [word]
     return morph_dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-

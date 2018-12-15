@@ -4,6 +4,7 @@ Created on Jun 11, 2018
 @author: xh
 '''
 
+
 class Parameter():
     """Class containing parameters to be passed to the experiment function."""
 
@@ -27,8 +28,7 @@ class Parameter():
         self.MinSuffixFreq = 3
         self.MinParadigmSupport = 2
         self.MinParadigmSuffix = 2
-        
-        
+
     def print_all(self):
         """Print the contents of all parameters."""
         print('--------------Parameters-------------')

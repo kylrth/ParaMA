@@ -68,6 +68,7 @@ def get_seg_dict_by_token_dict(token_seg_dict):
                 continue
     return seg_dict
 
+
 def seg_dict_update(seg_dict):
     """This function appears to split up morphologically complex roots further. It's not used anywhere."""
     #Recursively update segmentation if root is segmented
@@ -97,6 +98,7 @@ def seg_dict_update(seg_dict):
         updated_seg[word] = (morphs_new, components_new)
     seg_dict.update(updated_seg)
 
+
 def get_seg_dict_by_paradigms(paradigm_dict):
     """Given paradigms, create a mapping from tokens to their segmentation info."""
     # create a mapping from tokens to the transformation that creates them
@@ -107,9 +109,3 @@ def get_seg_dict_by_paradigms(paradigm_dict):
     # convert to a mapping from tokens to their segmentation info in a hierarchical structure
     seg_dict = get_seg_dict_by_token_dict(token_seg_dict)
     return seg_dict
-
-
-
-
-
-

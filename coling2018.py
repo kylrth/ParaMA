@@ -3,9 +3,12 @@ Created on Jun 11, 2018
 
 @author: xh
 '''
+
+
 from param import Parameter
 from evaluation import evaluate_seg
 from morphanalyzer import MorphAnalyzer
+
 
 def read_word_freq_list(infile):
     """Read a file where each line contains a word and its frequency count, tab-separated.
@@ -22,6 +25,7 @@ def read_word_freq_list(infile):
         wordlist.append((word, freq))
     fin.close()
     return wordlist
+
 
 def read_test_gold(infile):
     """Read the gold-standard morphological segmentation from a file.
@@ -56,6 +60,7 @@ def read_test_gold(infile):
     fin.close()
     return wordlist, goldseglist
 
+
 def add_test_to_train(train_word_freq_list, test_list):
     """Add words from the test data to the frequency list, assuming a frequency of 10."""
     # turn it into a dictionary
@@ -67,6 +72,7 @@ def add_test_to_train(train_word_freq_list, test_list):
             word_dict[word] = 10
     # change back to a list of tuples and return
     return sorted(word_dict.items(), key=lambda x: -x[1])
+
 
 def run_experiment(infile_train, infile_test_gold, params):
     """Run an experiment by reading data from a training file and testing on the gold standard data."""
@@ -97,6 +103,7 @@ def run_experiment(infile_train, infile_test_gold, params):
     # get precision, recall, and F1 scores
     evaluate_seg(test_gold, test_segs)
 
+
 def run_english():
     """Runs an experiment on English data against gold standard results."""
     params = Parameter()
@@ -108,6 +115,7 @@ def run_english():
     infile_train = r'data/wordlist.2010.eng.utf8.txt'
     infile_test_gold = r'data/mit/gold.eng.txt'
     run_experiment(infile_train, infile_test_gold, params)
+
 
 def run_turkish():
     """Runs an experiment on Turkish data against gold standard results."""
@@ -121,6 +129,7 @@ def run_turkish():
     infile_test_gold = r'data/mit/gold.tur.txt'
     run_experiment(infile_train, infile_test_gold, params)
 
+
 def run_finnish():
     """Runs an experiment on Finnish data against gold standard results."""
     params = Parameter()
@@ -132,6 +141,7 @@ def run_finnish():
     infile_train = r'data/wordlist.2010.fin.utf8.txt'
     infile_test_gold = r'data/mit/gold.fin.txt'
     run_experiment(infile_train, infile_test_gold, params)
+
 
 if __name__ == '__main__':
     run_english()

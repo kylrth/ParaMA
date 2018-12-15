@@ -7,6 +7,7 @@ Created on Jun 11, 2018
 
 import math
 
+
 def filter_afx_by_freq(afx_dict, min_afx_freq):
     """Filter affix dictionary by a minimum affix frequency, where the frequency is a count of distinct stem-lengths."""
     filtered_suf_dict = {}
@@ -15,6 +16,7 @@ def filter_afx_by_freq(afx_dict, min_afx_freq):
         if count >= min_afx_freq:
             filtered_suf_dict[suf] = stem_len_dist
     return filtered_suf_dict
+
 
 def group_afx_by_length(affix_stem_len_dist):
     """Group the affixes by length, and find the length of the largest and smallest roots in the entire set."""
@@ -85,6 +87,7 @@ def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
         afx_len_exp.append((afx, afx_score, count_sum, len_exp))
     return afx_len_exp
 
+
 def calc_suf_score_by_dist(paradigm_dict):
     """Get the score for each suffix by calculating the expected length of its root."""
     suffix_root_len_dist = {}
@@ -118,6 +121,7 @@ def calc_suf_score_by_dist(paradigm_dict):
     # return the score for each suffix
     return suffix_score_dict
 
+
 def filter_afxes(affix_root_len_dist, top_N=50):
     """Return the `top_N` most likely affixes for each affix length.
     
@@ -139,27 +143,9 @@ def filter_afxes(affix_root_len_dist, top_N=50):
     filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _count, _len_exp in filtered_affixes], key = lambda x: -x[1])
     return filtered_affixes
 
+
 def gen_N_best_suffix(word_dict, min_stem_len=3, max_suf_len=4, min_suf_freq=10, best_N=50):
     """Get the `best_N` best suffixes according to maximum likelihood."""
     suffix_stem_len_dist = gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq)
     best_suffix_list = filter_afxes(suffix_stem_len_dist, best_N)
     return best_suffix_list
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

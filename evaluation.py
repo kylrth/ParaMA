@@ -4,6 +4,7 @@ Created on Jun 11, 2018
 @author: xh
 '''
 
+
 def get_seg_points(seg):
     """Get the indices where the word was split in `seg`.
     
@@ -15,6 +16,7 @@ def get_seg_points(seg):
         indx += len(seg[i])
         seg_points.append(indx)
     return seg_points
+
 
 def get_best_seg(seg_test, segs_gold):
     """Choose the gold standard segmentation that matches most closely with `seg_test`.
@@ -95,6 +97,7 @@ def eval_seg_points(seg_gold, seg_test):
         f1 = 2 * prec * rec / (prec + rec)
     return (prec, rec, f1)
 
+
 def get_seg_morphemes(seg):
     """Return a list of tuples where each tuple contains the starting and ending indices for a morpheme."""
     seg_morphemes = []
@@ -106,6 +109,7 @@ def get_seg_morphemes(seg):
         sIndx = eIndx  # the end of this morpheme is the start of the next
     return seg_morphemes
 
+
 def calc_performance(tp, fp, fn):
     """Calculate precision, recall, and F1-score based on true positives, false positives, and false negatives."""
     # ensure no division by zero by returning zeros if tp (the numerator) is zero
@@ -115,6 +119,7 @@ def calc_performance(tp, fp, fn):
         rec = tp * 1.0 / (tp + fn)
         f1 = 2 * prec * rec / (prec + rec)
     return prec, rec, f1
+
 
 def eval_seg_morphemes(seg_gold, seg_test):
     """Get the precision, recall, and F1-score of the predictions for each morpheme in each word."""
@@ -144,6 +149,7 @@ def eval_seg_morphemes(seg_gold, seg_test):
         fn += fn_best
     return calc_performance(tp, fp, fn)
 
+
 def eval_last_morphemes(seg_gold, seg_test):
     """Get the precision, recall, and F1-score of the predictions of the last morpheme for each word."""
     if len(seg_gold) != len(seg_test): return 0.0, 0.0, 0.0
@@ -171,6 +177,7 @@ def eval_last_morphemes(seg_gold, seg_test):
         fp += fp_best
         fn += fn_best
     return calc_performance(tp, fp, fn)
+
 
 def evaluate_seg(gold_segs, test_segs):
     """Evaluate the predicted segmentations against the gold standard."""

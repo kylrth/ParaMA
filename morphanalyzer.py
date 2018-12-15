@@ -3,6 +3,8 @@ Created on Jun 11, 2018
 
 @author: xh
 '''
+
+
 from segcandidate import TokenAnalyzer
 from bayesian import get_initial_parameters, estimate_suffix_probability, do_step1_segmention, calc_seg_probs, calc_seg_prob
 from segmentation import get_seg_dict_by_paradigms
@@ -314,12 +316,3 @@ class MorphAnalyzer():
         for token in token_list:
             token_seg_list.append(self.segment_token(token))
         return token_seg_list
-
-
-
-
-
-
-
-
-

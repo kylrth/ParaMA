@@ -4,8 +4,10 @@ Created on Jun 11, 2018
 @author: xh
 '''
 
+
 from reliableroot import is_reliable_root
 from tqdm import tqdm
+
 
 def get_suffix_type_score(suffix_tuples):
     """Get the total number of roots where each suffix can apply."""
@@ -15,6 +17,7 @@ def get_suffix_type_score(suffix_tuples):
             if suffix in suffix_type_dict: suffix_type_dict[suffix] += len(root_list)
             else: suffix_type_dict[suffix] = len(root_list)
     return suffix_type_dict
+
 
 def prune_suffix_tuple(suffix_tuple, suffix_tuple_dict, suffix_type_score):
     """Prunes unlikely suffixes from suffix_tuple.
@@ -56,6 +59,7 @@ def prune_suffix_tuple(suffix_tuple, suffix_tuple_dict, suffix_type_score):
     for i in range(e_indx):
         suffix_tuple_final.extend(sorted_suffix_tuple_score[i][0])
     return tuple(sorted(set(suffix_tuple_final)))
+
 
 def prune_paradigms(paradigm_dict, reliable_suffix_tuples, suffix_type_score, single_suffix_tuples, tokens_prob_segs_dict, word_dict, exclude_unreliable):
     """Prune paradigms based on specified conditions.
@@ -129,13 +133,3 @@ def prune_paradigms(paradigm_dict, reliable_suffix_tuples, suffix_type_score, si
             # as well as the set of likely suffixes.
             root_suffix_set_dict[word] = rem_set
     return pruned_paradigm_dict
-
-
-
-
-
-
-
-
-
-
