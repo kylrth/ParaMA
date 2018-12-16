@@ -6,63 +6,91 @@ Created on Jun 11, 2018
 
 
 import math
+from tqdm import tqdm
+from affix import Affix
 
 
-def filter_afx_by_freq(afx_dict, min_afx_freq):
+def filter_affixes_by_freq(affix_dict, min_afx_freq):
     """Filter affix dictionary by a minimum affix frequency, where the frequency is a count of distinct stem-lengths."""
-    filtered_suf_dict = {}
-    for suf, stem_len_dist in afx_dict.items():
+    new_dict = {}
+    for affix, stem_len_dist in affix_dict.items():
         count = sum(stem_len_dist.values())
-        if count >= min_afx_freq:
-            filtered_suf_dict[suf] = stem_len_dist
-    return filtered_suf_dict
+        if count < min_afx_freq:
+            new_dict[affix] = stem_len_dist
+    return new_dict
 
 
-def group_afx_by_length(affix_stem_len_dist):
-    """Group the affixes by length, and find the length of the largest and smallest roots in the entire set."""
+def group_affixes_by_stem_length(affixes):
+    """Group the affixes by stem length, and find the length of the largest and smallest roots in the entire set."""
     min_root_len = 100
     max_root_len = 0
     groups = {}
-    for afx, stem_len_dist in affix_stem_len_dist.items():
+
+    # sort through
+    for afx, stem_len_dist in affixes.items():
         afx_len = len(afx)
         if afx_len in groups:
             groups[afx_len].append((afx, stem_len_dist))
         else:
             groups[afx_len] = [(afx, stem_len_dist)]
         min_root_len, max_root_len = min(min_root_len, min(stem_len_dist)), max(max_root_len, max(stem_len_dist))
+
     return groups, min_root_len, max_root_len
 
 
-def gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq=1):
-    """Collect possible suffix candidates with a dictionary of stem lengths and frequencies (counts of distinct stem
+def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
+    """Collect possible affix candidates with a dictionary of stem lengths and frequencies (counts of distinct stem
     lengths).
     
     Optionally filter suffix candidates by minimum frequency.
     """
-    suf_dict = {}
-    for word in word_dict:
-        if len(word) <= min_stem_len: 
+    affixes = {}
+    for word in words:
+        if len(word) <= min_stem_len:
             continue
-        sIndx = max(min_stem_len, len(word) - max_suf_len)
-        # test all possible stem-suffix combinations according to min_stem_len and max_suf_len
-        for i in range(sIndx, len(word)):
-            stem = word[:i]
-            suf = word[i:]
-            # if the stem is a word, save the suffix along with the length of the stem
-            if stem in word_dict:
-                stem_len = len(stem)
-                if suf in suf_dict:
-                    suf_len_dict = suf_dict[suf]
+        
+        # test all possible prefix-stem combinations
+        for i in range(1, min(len(word) - min_stem_len, max_aff_len) + 1):
+            left = word[:i]
+            right = word[i:]
+            
+            # if the right side is a word, save the prefix along with the length of the stem
+            if right in words:
+                stem_len = len(right)
+                left = Affix(left, 'pref')
+                if left in affixes:
+                    pref_len_dict = affixes[left]  # frequency dictionary of stem lengths for this prefix
+                    if stem_len in pref_len_dict:
+                        pref_len_dict[stem_len] += 1
+                    else:
+                        pref_len_dict[stem_len] = 1
+                    affixes[left] = pref_len_dict
+                else:
+                    affixes[left] = {stem_len: 1}
+        
+        # test all possible stem-suffix combinations
+        for i in range(max(min_stem_len, len(word) - max_aff_len), len(word)):
+            left = word[:i]
+            right = word[i:]
+
+            # if the left side is a word, save the suffix along with the length of the stem
+            if left in words:
+                stem_len = len(left)
+                right = Affix(right, 'suf')
+                if right in affixes:
+                    suf_len_dict = affixes[right]  # frequency dictionary of stem lengths for this suffix
                     if stem_len in suf_len_dict:
                         suf_len_dict[stem_len] += 1
                     else:
                         suf_len_dict[stem_len] = 1
+                    affixes[right] = suf_len_dict
                 else:
-                    suf_dict[suf] = {stem_len:1}
-    if min_suf_freq <= 1:
-        return suf_dict
-    # filter infrequent suffixes
-    return filter_afx_by_freq(suf_dict, min_suf_freq)
+                    affixes[right] = {stem_len: 1}
+    
+    if min_affix_freq <= 1:
+        return affixes
+    # filter infrequent affixes
+    return filter_affixes_by_freq(affixes, min_affix_freq)
 
 
 def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
@@ -122,30 +150,38 @@ def calc_suf_score_by_dist(paradigm_dict):
     return suffix_score_dict
 
 
-def filter_afxes(affix_root_len_dist, top_N=50):
+def filter_affixes(affixes, top_N=50):
     """Return the `top_N` most likely affixes for each affix length.
     
-    The list should be of length `top_N` * len(same_len_affix_dist).
+    The list should be at most of length `top_N` * len(same_len_affix_dist).
     """
     filtered_affixes = []
+
     # get a dictionary mappings lengths to affixes of that length
     # also get the length of the largest and smallest roots
-    same_len_affix_dist, min_root_len, max_root_len = group_afx_by_length(affix_root_len_dist)
-    print('Suffix Legth Range: (%s, %s)' % (min(same_len_affix_dist.keys()), max(same_len_affix_dist.keys())))
-    for afx_len, afx_stem_len_dist in sorted(same_len_affix_dist.items(), key=lambda x: x[0]):
-        print('Processing Suffix Length: %s.' % (afx_len))
+    affix_groups, min_root_len, max_root_len = group_affixes_by_stem_length(affixes)
+
+    len_min = min(affix_groups.keys())
+    len_max = max(affix_groups.keys())
+    print('Root length range: (%s, %s)' % (len_min, len_max))
+
+    pbar = tqdm(total=len_max - len_min)
+    for _, affixes_and_dists in sorted(affix_groups.items(), key=lambda x: x[0]):
         # calculate affix confidence for each affix (equation 1 from the paper)
-        affix_len_exp = calc_expected_stem_len(afx_stem_len_dist, min_root_len, max_root_len)
+        affix_len_exp = calc_expected_stem_len(affixes_and_dists, min_root_len, max_root_len)
         affix_len_exp = sorted(affix_len_exp, key=lambda x: -x[1])  # sort by affix confidence
-        top_N_afx = affix_len_exp[:top_N]  # get the top_N most likely affixes
+        top_N_afx = affix_len_exp[:min(top_N, len(affix_len_exp))]  # get the top_N most likely affixes
         filtered_affixes.extend(top_N_afx)
+        pbar.update(1)
+    pbar.close()
+
     # get just the affix and the confidence, and sort by confidence
-    filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _count, _len_exp in filtered_affixes], key = lambda x: -x[1])
+    filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _, _ in filtered_affixes], key = lambda x: -x[1])
     return filtered_affixes
 
 
-def gen_N_best_suffix(word_dict, min_stem_len=3, max_suf_len=4, min_suf_freq=10, best_N=50):
+def gen_N_best_affixes(word_dict, min_stem_len=3, max_suf_len=4, min_suf_freq=10, best_N=50):
     """Get the `best_N` best suffixes according to maximum likelihood."""
-    suffix_stem_len_dist = gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq)
-    best_suffix_list = filter_afxes(suffix_stem_len_dist, best_N)
-    return best_suffix_list
+    affixes = generate_candidates(word_dict, min_stem_len, max_suf_len, min_suf_freq)
+    best_affixes = filter_affixes(affixes, best_N)
+    return best_affixes

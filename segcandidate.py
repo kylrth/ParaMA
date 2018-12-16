@@ -11,8 +11,8 @@ class SegStructure():
     def __init__(self, token, morph, root, trans, suffix):
         """Save parameters."""
         self.token = token
-        self.root = root
         self.morph = morph
+        self.root = root
         self.trans = trans
         self.suffix = suffix
         self.key = (root, trans, suffix)  # the triple described in the paper
@@ -25,10 +25,10 @@ class SegStructure():
 class TokenAnalyzer:
     """Class for analyzing tokens."""
 
-    def __init__(self, word_dict, suffix_dict, min_stem_len, max_suffix_len, use_trans_rules):
+    def __init__(self, word_dict, affix_dict, min_stem_len, max_suffix_len, use_trans_rules):
         """Save parameters."""
         self.word_dict = word_dict
-        self.suffix_dict = suffix_dict
+        self.affix_dict = affix_dict
         self.morph_dict = get_morph_dict(word_dict, min_stem_len)
         self.min_stem_len = min_stem_len
         self.max_suffix_len = max_suffix_len
@@ -46,15 +46,15 @@ class TokenAnalyzer:
             root = token
             morph = token
             trans = '$'
-            suffix = '$'
-            ts = SegStructure(token, morph, root, trans, suffix)
+            affix = '$'
+            ts = SegStructure(token, morph, root, trans, affix)
             segs.append(ts)
             return segs
-        # The word is long enough to be morphologically complex, so check for possible suffixes.
+        # The word is long enough to be morphologically complex, so check for possible affixes.
         s_indx = max(self.min_stem_len, len(token)-self.max_suffix_len)
         for indx in range(s_indx, len(token)):
             suffix = token[indx:]
-            if not suffix in self.suffix_dict: continue
+            if not suffix in self.affix_dict: continue
             morph = token[:indx]
             root = morph
             trans = '$'

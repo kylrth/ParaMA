@@ -9,7 +9,7 @@ from segcandidate import TokenAnalyzer
 from bayesian import get_initial_parameters, estimate_suffix_probability, do_step1_segmention, calc_seg_probs, calc_seg_prob
 from segmentation import get_seg_dict_by_paradigms
 from pruning import prune_paradigms
-from suffixcandidate import gen_N_best_suffix, calc_suf_score_by_dist
+from suffixcandidate import gen_N_best_affixes, calc_suf_score_by_dist
 from paradigm import create_paradigms, get_paradigm_suffix_sets, get_reliable_suffix_tuples
 from reliableroot import is_reliable_root
 
@@ -31,17 +31,15 @@ class MorphAnalyzer():
             new_word_dict[word] = freq
         return new_word_dict
 
-    def __get_reliable_paradigm_suffixes(self, word_dict):
+    def __get_reliable_paradigm_affixes(self, word_dict):
         """Use long and frequent words to generate an initial set of suffixes."""
         print('--get reliable words')
         reliable_word_dict = self.__get_frequent_long_words(word_dict)
         print('--create token analyzer')
-        prior_prob_suffix = {}
-        suffix_dict = dict(gen_N_best_suffix(word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxSuffixLen, best_N=self.param.BestNCandSuffix))
-        itr = 0
-        while itr < 2:
-            itr += 1
-            ta = TokenAnalyzer(reliable_word_dict, suffix_dict, self.param.MinStemLen, self.param.MaxSuffixLen, self.param.UseTransRules)
+        prior_prob_affix = {}
+        affix_dict = dict(gen_N_best_affixes(word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxSuffixLen, best_N=self.param.BestNCandSuffix))
+        for _ in range(2):  # 2 epochs
+            ta = TokenAnalyzer(reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxSuffixLen, self.param.UseTransRules)
             print('--analyze possible segmentations for tokens')
             token_segs = ta.analyze_token_list(reliable_word_dict.keys())
 
