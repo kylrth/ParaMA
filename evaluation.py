@@ -157,6 +157,11 @@ def eval_last_morphemes(seg_gold, seg_test):
     for i in range(len(seg_gold)):
         goldsegs = seg_gold[i]
         test = seg_test[i]
+        # DEBUG!!
+        # print('DEBUG: gold:', goldsegs)
+        # print('DEBUG: test:', test)
+        # input()
+        # END DEBUG
         # get the starting and ending indices of the last predicted morpheme
         last_morph_indx = {get_seg_morphemes(test)[-1]}
         _prec_best, _rec_best, f1_best = 0.0, 0.0, -1.0

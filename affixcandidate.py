@@ -28,7 +28,7 @@ def group_affixes_by_stem_length(affixes):
 
     # sort through
     for afx, stem_len_dist in affixes.items():
-        afx_len = len(afx)
+        afx_len = len(afx.affix)
         if afx_len in groups:
             groups[afx_len].append((afx, stem_len_dist))
         else:
@@ -116,38 +116,38 @@ def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
     return afx_len_exp
 
 
-def calc_suf_score_by_dist(paradigm_dict):
-    """Get the score for each suffix by calculating the expected length of its root."""
-    suffix_root_len_dist = {}
+def calc_affix_score_by_dist(paradigm_dict):
+    """Get the score for each affix by calculating the expected length of its root."""
+    affix_root_len_dist = {}
     min_root_len = 100
     max_root_len = 0
-    # get the root length distribution for each suffix
+    # get the root length distribution for each affix
     for root, derived_word_list in paradigm_dict.items():
         root_len = len(root)
         min_root_len = min(min_root_len, root_len)  # eventually get the length of the smallest root
         max_root_len = max(max_root_len, root_len)  # eventually get the length of the longest root
-        for _word, _trans, suffix, _morph in derived_word_list:
-            if suffix in suffix_root_len_dist:
-                # use the len_dist already calculated for this suffix
-                root_len_dist = suffix_root_len_dist[suffix]
+        for _word, affix, _morph in derived_word_list:
+            if (affix.affix, affix.kind) in affix_root_len_dist:
+                # use the len_dist already calculated for this affix
+                root_len_dist = affix_root_len_dist[(affix.affix, affix.kind)]
                 if root_len in root_len_dist:
                     root_len_dist[root_len] += 1
                 else:
                     root_len_dist[root_len] = 1
-                suffix_root_len_dist[suffix] = root_len_dist  # This wasn't here before, but I think it should be. (???)
+                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist  # This wasn't here before, but I think it should be. (???)
             else:
-                # use a len_dist of 1 for this suffix
+                # use a len_dist of 1 for this affix
                 root_len_dist = {root_len:1}
-                suffix_root_len_dist[suffix] = root_len_dist
+                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
     
-    # sort by suffix
-    suffix_root_len_dist = sorted(suffix_root_len_dist.items(), key=lambda x: x[0])
+    # sort by affix
+    affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0].affix)
     # calculate the expected stem length
-    suffix_len_exp = calc_expected_stem_len(suffix_root_len_dist, min_root_len, max_root_len)
-    # use the stem length as a score for each suffix
-    suffix_score_dict = dict([(suffix, score) for suffix, score, _count_sum, _len_exp in suffix_len_exp])
-    # return the score for each suffix
-    return suffix_score_dict
+    affix_len_exp = calc_expected_stem_len(affix_root_len_dist, min_root_len, max_root_len)
+    # use the stem length as a score for each affix
+    affix_score_dict = dict([(affix, score) for affix, score, _count_sum, _len_exp in affix_len_exp])
+    # return the score for each affix
+    return affix_score_dict
 
 
 def filter_affixes(affixes, top_N=50):

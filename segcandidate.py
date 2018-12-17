@@ -5,17 +5,20 @@ Created on Jun 11, 2018
 '''
 
 
+from affix import Affix
+
+
 class SegStructure():
     """A class for storing an analysis of a certain token."""
 
-    def __init__(self, token, morph, root, trans, suffix):
+    def __init__(self, token, morph, root, affix):
         """Save parameters."""
         self.token = token
         self.morph = morph
         self.root = root
-        self.trans = trans
-        self.suffix = suffix
-        self.key = (root, trans, suffix)  # the triple described in the paper
+        self.affix = affix  # an affix object
+        self.key = (root, affix)  # the triple described in the paper
+        # (an Affix object describes the transformation and the affix)
     
     def is_atomic(self):
         """Determine whether the word is atomic, as defined in section 3 of the paper."""
@@ -29,10 +32,78 @@ class TokenAnalyzer:
         """Save parameters."""
         self.word_dict = word_dict
         self.affix_dict = affix_dict
-        self.morph_dict = get_morph_dict(word_dict, min_stem_len)
+        self.prefix_morph_dict, self.suffix_morph_dict = get_morph_dicts(word_dict, min_stem_len)
         self.min_stem_len = min_stem_len
         self.max_suffix_len = max_suffix_len
         self.use_trans_rules = use_trans_rules
+    
+    def get_trans_rules(self, token, morph, root, affix, kind):
+        """Get the transformation rules that occur when `affix` is applied to `root` to get `token`, and return the
+        SegStructure.
+
+        Always account for a word using the simplest transformation rules. Some bad examples:
+            avoid -> pains = paint - t + s
+            avoid -> passes = pas + DUP+s + es
+            lost -> borned = borne -e +ing |*born + ing
+        To do this, we compute possibilities in order of likelihood, and stop when we find a possible transformation.
+        """
+        if kind == 'pref':
+            morph_dict = self.prefix_morph_dict
+        else:
+            morph_dict = self.suffix_morph_dict
+
+        # Deletion
+        if morph in morph_dict:
+            for root in morph_dict[morph]:
+                if kind == 'suf' and (root + affix) in self.word_dict: continue
+                if kind == 'pref' and (affix + root) in self.word_dict: continue
+                
+                if kind == 'suf' and root[-1] == affix[0]:
+                    # : voiced = voic(voice-e)+ed
+                    trans = 'DEL-' + root[-1]
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+                elif kind == 'pref' and root[0] == affix[-1]:
+                    trans = 'DEL-' + root[0]
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+        
+        # Substitution
+        # : carried = carry -y+i + ed; morph = carri
+        if kind == 'suf':
+            if (morph[:-1] in morph_dict) and (not morph in self.word_dict):
+                # avoid painting = paint SUB-t+t +ing
+                for root in morph_dict[morph[:-1]]:
+                    if root == morph: continue
+                    if (root + affix) in self.word_dict: continue
+
+                    trans = 'SUB-%s+%s' % (root[-1], morph[-1])
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+        else:  # 'pref'
+            if (morph[1:] in morph_dict) and (not morph in self.word_dict):
+                # avoid painting = paint SUB-t+t +ing
+                for root in morph_dict[morph[1:]]:
+                    if root == morph: continue
+                    if (affix + root) in self.word_dict: continue
+                    
+                    trans = 'SUB-%s+%s' % (root[0], morph[0])
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+        
+        # Duplication
+        # avoid passes = pas + DUP+s +es, since pass is already a word
+        if kind == 'suf':
+            if (len(morph) > max(2, self.min_stem_len)) and (morph[-1] == morph[-2]):
+                root = morph[:-1]
+                if (root in self.word_dict) and (not (root + affix) in self.word_dict):
+                    trans = 'DUP+' + morph[-1]
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+        else:  # 'pref'
+            if (len(morph) > max(2, self.min_stem_len)) and (morph[0] == morph[1]):
+                root = morph[1:]
+                if (root in self.word_dict) and (not (affix + root) in self.word_dict):
+                    trans = 'DUP+' + morph[0]
+                    return SegStructure(token, morph, root, Affix(affix, kind, trans))
+        
+        # Nothing was found, so return nothing
+        return None
 
     def analyze_token(self, token):
         """Get possible segmentations for each possible division of the token into a morph and a suffix.
@@ -47,75 +118,51 @@ class TokenAnalyzer:
             morph = token
             trans = '$'
             affix = '$'
-            ts = SegStructure(token, morph, root, trans, affix)
+            ts = SegStructure(token, morph, root, Affix(affix, 'pref', trans))
             segs.append(ts)
             return segs
+        
         # The word is long enough to be morphologically complex, so check for possible affixes.
         s_indx = max(self.min_stem_len, len(token)-self.max_suffix_len)
         for indx in range(s_indx, len(token)):
-            suffix = token[indx:]
-            if not suffix in self.affix_dict: continue
-            morph = token[:indx]
-            root = morph
-            trans = '$'
             # avoid the single character suffix with a large number of non-occurring roots, by starting with a small
             # stem and increasing until a word is encountered
-            if root in self.word_dict:
-                ts = SegStructure(token, morph, root, trans, suffix)
-                segs.append(ts)
-                continue
-            
-            if not self.use_trans_rules: continue
-            
-            # Always account for a word with the simplest transformation rules
-            # avoid -> pains = paint - t + s
-            # avoid -> passes = pas + DUP-s + es
-            # lost -> borned = borne -e +ing |*born + ing
-            # To do this, we compute possibilities in order of likelihood, and stop we find a possible transformation.
-            if len(suffix) < 2: continue
-            # --------------------------------Hypothesize deletion rules
-            found_possible_root = False
-            if morph in self.morph_dict:
-                for root in self.morph_dict[morph]:
-                    if (root + suffix) in self.word_dict: continue
-                    found_possible_root = True
-                    if root[-1] == suffix[0]:
-                        # : voiced = voic(voice-e)+ed
-                        trans = 'DEL-' + root[-1]
-                        ts = SegStructure(token, morph, root, trans, suffix)
-                        segs.append(ts)
-                    else:
-                        trans = 'DEL-' + root[-1]
-                        # : voiced = voic(voice-e)+ed
-                        ts = SegStructure(token, morph, root, trans, suffix)
-                        segs.append(ts)
-            if found_possible_root: continue
-            # --------------------------------Hypothesize replacement rules
-            # : carried = carry -y+i + ed; morph = carri
-            if (morph[:-1] in self.morph_dict) and (not morph in self.word_dict):
-                # avoid painting = paint REP-t+t +ing
-                for root in self.morph_dict[morph[:-1]]:
-                    if root == morph: continue
-                    if (root + suffix) in self.word_dict: continue
-                    found_possible_root = True
-                    trans = 'REP-%s+%s' % (root[-1], morph[-1])
-                    ts = SegStructure(token, morph, root, trans, suffix)
+
+            left = token[indx:]
+            right = token[:indx]
+            if Affix(left, 'pref') in self.affix_dict:  # if `left` is a valid prefix
+                morph = right
+                root = morph
+                affix = left
+                if root in self.word_dict:  # if the remaining part is a known word
+                    ts = SegStructure(token, morph, root, Affix(left, 'pref', '$'))
                     segs.append(ts)
-            if found_possible_root: continue
-            # --------------------------------Hypothesize duplication rules
-            # avoid passes = pas + DUP+s +es, since pass is already a word
-            if (len(morph) > max(2, self.min_stem_len)) and (morph[-1] == morph[-2]):
-                root = morph[:-1]
-                if (root in self.word_dict) and (not (root + suffix) in self.word_dict):
-                    trans = 'DUP-' + morph[-1]
-                    ts = SegStructure(token, morph, root, trans, suffix)
+                    continue
+                if len(affix) < 2: continue
+                if self.use_trans_rules:
+                    # get the most likely transition rule if there is one
+                    ts = self.get_trans_rules(token, morph, root, affix, 'pref')
+                    if ts:
+                        segs.append(ts)
+            elif Affix(right, 'suf') in self.affix_dict:  # if `right` is a valid suffix
+                morph = left
+                root = morph
+                affix = right
+                if root in self.word_dict:  # if the remaining part is a known word
+                    ts = SegStructure(token, morph, root, Affix(right, 'suf', '$'))
                     segs.append(ts)
+                    continue
+                if len(affix) < 2: continue
+                if self.use_trans_rules:
+                    # get the most likely transition rule if there is one
+                    ts = self.get_trans_rules(token, morph, root, affix, 'suf')
+                    if ts:
+                        segs.append(ts)
+            
         if len(segs) == 0:  # produce at least one possible segmentation if none were found
             root = token
             morph = token
-            trans = '$'
-            suffix = '$'
-            ts = SegStructure(token, morph, root, trans, suffix)
+            ts = SegStructure(token, morph, root, Affix('$', 'pref'))
             segs.append(ts)
         return segs
 
@@ -128,19 +175,28 @@ class TokenAnalyzer:
         return token_segs
 
 
-def get_morph_dict(word_dict, min_stem_len):
-    """Create a dictionary mapping words without the last character to the possible words represented."""
-    morph_dict = {}
+def get_morph_dicts(word_dict, min_stem_len):
+    """Create a dictionary mapping words without the last character to the possible words represented, and a dictionary
+    mapping words without the first character to the possible words represented.
+    
+    Examples of things to avoid
+        pain != paint - t, as itself is a word
+        lost: X = Xe - e, while X is word, Xe is a verb; will be largely affected by noise
+        process in analyzed token
+    This is taken care of by the `analyze_token` method.
+    """
+    prefix_morph_dict = {}
+    suffix_morph_dict = {}
     for word in word_dict:
         if len(word) <= min_stem_len:
             continue
+        # prefixes
+        morph = word[1:]
+        if morph in prefix_morph_dict: prefix_morph_dict[morph].append(word)
+        else: prefix_morph_dict[morph] = [word]
+
+        # suffixes
         morph = word[:-1]
-        #---------------------------------------------------------------------
-        # pain != paint - t, as itself is a word
-        # lost: X = Xe - e, while X is word, Xe is a verb; will be largely affected by noise
-        # process in analyzed token
-        # (This is done in analyze_token method)
-        #---------------------------------------------------------------------
-        if morph in morph_dict: morph_dict[morph].append(word)
-        else: morph_dict[morph] = [word]
-    return morph_dict
+        if morph in suffix_morph_dict: suffix_morph_dict[morph].append(word)
+        else: suffix_morph_dict[morph] = [word]
+    return prefix_morph_dict, suffix_morph_dict

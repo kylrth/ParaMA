@@ -6,12 +6,13 @@ Created on Jun 11, 2018
 
 
 from segcandidate import TokenAnalyzer
-from bayesian import get_initial_parameters, estimate_suffix_probability, do_step1_segmention, calc_seg_probs, calc_seg_prob
+from bayesian import get_initial_parameters, estimate_affix_probability, do_step1_segmention, calc_seg_probs, calc_seg_prob
 from segmentation import get_seg_dict_by_paradigms
 from pruning import prune_paradigms
-from suffixcandidate import gen_N_best_affixes, calc_suf_score_by_dist
-from paradigm import create_paradigms, get_paradigm_suffix_sets, get_reliable_suffix_tuples
+from affixcandidate import gen_N_best_affixes, calc_affix_score_by_dist
+from paradigm import create_paradigms, get_paradigm_affix_sets, get_reliable_affix_tuples
 from reliableroot import is_reliable_root
+from affix import Affix
 
 
 class MorphAnalyzer():
@@ -37,33 +38,33 @@ class MorphAnalyzer():
         reliable_word_dict = self.__get_frequent_long_words(word_dict)
         print('--create token analyzer')
         prior_prob_affix = {}
-        affix_dict = dict(gen_N_best_affixes(word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxSuffixLen, best_N=self.param.BestNCandSuffix))
+        affix_dict = dict(gen_N_best_affixes(word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxAffixLen, best_N=self.param.BestNCandAffix))
         for _ in range(2):  # 2 epochs
-            ta = TokenAnalyzer(reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxSuffixLen, self.param.UseTransRules)
+            ta = TokenAnalyzer(reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules)
             print('--analyze possible segmentations for tokens')
             token_segs = ta.analyze_token_list(reliable_word_dict.keys())
 
             print('--get initial parameters')  # initial probabilities for roots, suffixes, and transitions
-            probroots, probsuffix, probtrans = get_initial_parameters(token_segs)
-            if prior_prob_suffix: probsuffix = prior_prob_suffix  # (???)
+            probroots, probaffix, probtrans = get_initial_parameters(token_segs)
+            if prior_prob_affix: probaffix = prior_prob_affix  # (???)
             
             print('--segment tokens')  # get the most likely segmentation from those listed as possible in `token_segs`
-            resolved_segs = do_step1_segmention(token_segs, probroots, probsuffix, probtrans)
+            resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
 
             print('--create paradigms')
             paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs)
 
             print('--get paradigm suffix sets')  # get a set of suffixes for each root
-            root_suffix_set_list = get_paradigm_suffix_sets(paradigm_dict)
+            root_affix_set_list = get_paradigm_affix_sets(paradigm_dict)
 
             print('--prune paradigms')
-            reliable_suffix_tuples, single_suffix_tuples, reliable_suffix_type_dict = get_reliable_suffix_tuples(root_suffix_set_list, word_dict, self.param.MinParadigmSupport, self.param.MinParadigmSuffix, self.param.MinSuffixFreq)
-            suffix_dict = reliable_suffix_type_dict
+            reliable_affix_tuples, single_affix_tuples, reliable_affix_type_dict = get_reliable_affix_tuples(root_affix_set_list, word_dict, self.param.MinParadigmSupport, self.param.MinParadigmAffix, self.param.MinAffixFreq)
+            affix_dict = reliable_affix_type_dict
 
             # use these suffix probabilities at the next iteration
-            prior_prob_suffix = estimate_suffix_probability(suffix_dict)
+            prior_prob_affix = estimate_affix_probability(affix_dict)
         
-        return reliable_suffix_tuples, single_suffix_tuples, reliable_suffix_type_dict
+        return reliable_affix_tuples, single_affix_tuples, reliable_affix_type_dict
     
     def __strip_apostrophe(self, token):
         """Split before an apostrophe, ensuring it appears after any hyphen."""
@@ -155,31 +156,32 @@ class MorphAnalyzer():
         if self.param.DoApostrophe: word_dict = self.__process_apostrophe(word_dict)
         return word_dict
 
-    def __segment_simple_token(self, token, seg_dict, ta, probroots, probsuffix, probtrans):
+    def __segment_simple_token(self, token, seg_dict, ta, probroots, probaffix, probtrans):
         """Segment a token assumed to have no hyphens or apostrophes, using the model specified in the parameters."""
         # if the token is recognized, segment it according to the model
         if token in seg_dict: return seg_dict[token]
         
         # get possible segmentations
         segs = ta.analyze_token(token)
+        # print(segs)
+        # input()
 
         # find the segment with the highest probability
         max_prob = 0.0
         best_ts = None
         for ts in segs:
-            prob = calc_seg_prob(ts, probroots, probsuffix, probtrans)
+            prob = calc_seg_prob(ts, probroots, probaffix, probtrans)
             if prob > max_prob:
                 max_prob = prob
                 best_ts = ts
         
         if best_ts:
             root = best_ts.root
-            suffix = best_ts.suffix
-            trans = best_ts.trans
+            affix = best_ts.affix
             morph = best_ts.morph
 
             # if the word is simple, return it that way
-            if suffix == '$': return ((token,),((token, '$', '$'),))
+            if affix.affix == '$': return ((token,), ((token, Affix('$', 'pref', '$')),))
 
             morphs = []
             components = []
@@ -197,17 +199,17 @@ class MorphAnalyzer():
                 components.extend(seg_components)
             else:  # otherwise, assume it's simple
                 morphs.append(morph)
-                components.append((root, '$', '$'))
+                components.append((root, Affix('$', 'pref', '$')))
             # add the final transformation to the lists of morphs and components
-            morphs.append(suffix)
-            components.append((root, trans, suffix))
+            morphs.append(affix)
+            components.append((root, affix))
 
             return (tuple(morphs), tuple(components))
         
         # if there was no best segmentation, assume it's simple
-        return ((token,),((token, '$', '$'),))
+        return ((token,), ((token, Affix('$', 'pref', '$')),))
     
-    def __segment_token(self, token, word_dict, seg_dict, ta, probroots, probsuffix, probtrans):
+    def __segment_token(self, token, word_dict, seg_dict, ta, probroots, probaffix, probtrans):
         """Segment the token using the model objects from the parameters."""
         # strip apostrophe if there, and split along hyphens
         token, apostrophe_0 = self.__strip_apostrophe(token)
@@ -222,19 +224,19 @@ class MorphAnalyzer():
             if len(subtoken) == 0: continue
             
             # segment the subtoken, and add the morphs and components to the list
-            seg_subtoken_morphs, seg_subtoken_components = self.__segment_simple_token(subtoken, seg_dict, ta, probroots, probsuffix, probtrans)
+            seg_subtoken_morphs, seg_subtoken_components = self.__segment_simple_token(subtoken, seg_dict, ta, probroots, probaffix, probtrans)
             morphs.extend(seg_subtoken_morphs)
             components.extend(seg_subtoken_components)
 
             # add the apostrophe part of the subtoken
             if apostrophe and len(apostrophe) > 0:
                 morphs.append(apostrophe)
-                components.append((apostrophe, '$', '$'))
+                components.append((apostrophe, Affix('$', 'pref', '$')))
 
         # account for the apostrophe part, if there
         if apostrophe_0 and len(apostrophe_0) > 0:
             morphs.append(apostrophe_0)
-            components.append((apostrophe_0, '$', '$'))
+            components.append((apostrophe_0, Affix('$', 'pref', '$')))
         
         return tuple(morphs), tuple(components) 
     
@@ -251,33 +253,33 @@ class MorphAnalyzer():
         # create the word frequency dictionary, parsing hyphens and apostrophes as determined by self.params
         train_dict = self.__process_tokens(train_word_freq_list)
 
-        # get paradigms with reliable suffixes
-        reliable_suffix_tuples, single_suffix_tuples, suffix_dict = self.__get_reliable_paradigm_suffixes(train_dict)
+        # get paradigms with reliable affixes
+        reliable_affix_tuples, single_affix_tuples, affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
 
         print('| Generate tokens candidate segmentations')
-        token_analyzer = TokenAnalyzer(train_dict, suffix_dict, self.param.MinStemLen, self.param.MaxSuffixLen, self.param.UseTransRules)
+        token_analyzer = TokenAnalyzer(train_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules)
         token_segs = token_analyzer.analyze_token_list(train_dict.keys())
 
         print('| Obtain statistics')
-        probroots, _probsuffix, probtrans = get_initial_parameters(token_segs)
-        probsuffix = estimate_suffix_probability(suffix_dict)
+        probroots, _probaffix, probtrans = get_initial_parameters(token_segs)
+        probaffix = estimate_affix_probability(affix_dict)  # estimate probability based on new data
 
         print('| Segment tokens')
-        resolved_segs = do_step1_segmention(token_segs, probroots, probsuffix, probtrans)
+        resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
 
         print('| Create paradigms')
         paradigm_dict, atomic_word_dict = create_paradigms(resolved_segs)
 
         print('| Recalculate seg probability')
-        token_seg_probs = calc_seg_probs(token_segs, probroots, probsuffix, probtrans)
+        token_seg_probs = calc_seg_probs(token_segs, probroots, probaffix, probtrans)
         token_seg_prob_dict = dict(token_seg_probs)
 
-        print('| Calculate suffix score')  # using the distribution of root lengths
-        suffix_type_score = calc_suf_score_by_dist(paradigm_dict)
+        print('| Calculate affix score')  # using the distribution of root lengths
+        affix_type_score = calc_affix_score_by_dist(paradigm_dict)
 
         if self.param.DoPruning:
             print('| Prune paradigms')
-            paradigm_dict = prune_paradigms(paradigm_dict, reliable_suffix_tuples, suffix_type_score, single_suffix_tuples, token_seg_prob_dict, train_dict, self.param.ExcludeUnreliable)
+            paradigm_dict = prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, single_affix_tuples, token_seg_prob_dict, train_dict, self.param.ExcludeUnreliable)
         
         print('| Get segmentation dictionary')
         # use the paradigms to get a map from words to their segmentation structure
@@ -285,16 +287,16 @@ class MorphAnalyzer():
         # add the atomic words to the list
         seg_dict.update(atomic_word_dict)
         
-        # combine reliable suffix tuples and single suffix tuples into one dictionary (Why???)
-        suffix_tuple_dict = {}
-        suffix_tuple_dict.update(reliable_suffix_tuples)
-        suffix_tuple_dict.update(single_suffix_tuples)
+        # combine reliable affix tuples and single affix tuples into one dictionary (Why???)
+        affix_tuple_dict = {}
+        affix_tuple_dict.update(reliable_affix_tuples)
+        affix_tuple_dict.update(single_affix_tuples)
         
         self.__word_dict = train_dict
         self.__seg_dict = seg_dict
         self.__ta = token_analyzer
         self.__probroots = probroots
-        self.__probsuffix = probsuffix
+        self.__probaffix = probaffix
         self.__probtrans = probtrans
     
     def segment_token(self, token):
@@ -305,7 +307,7 @@ class MorphAnalyzer():
             self.__seg_dict,
             self.__ta,
             self.__probroots,
-            self.__probsuffix,
+            self.__probaffix,
             self.__probtrans)
     
     def segment_token_list(self, token_list):

@@ -28,10 +28,10 @@ def get_seg_dict_by_token_dict(token_seg_dict):
                 wd_stack.pop()
                 continue
             if wd in token_seg_dict:
-                # get morph, suffix, root, trans for this transformation
-                wd_morph, wd_suffix, wd_root, wd_trans = token_seg_dict[wd]
-                if wd_suffix == '$' or wd_suffix == '':  # if we've reached the bottom root
-                    seg_dict[wd] = ((wd_morph,), ((wd_root, wd_trans, wd_suffix),))
+                # get morph, root, and affix for this transformation
+                wd_morph, wd_root, wd_affix = token_seg_dict[wd]
+                if wd_affix.affix == '$' or wd_affix.affix == '':  # if we've reached the bottom root
+                    seg_dict[wd] = ((wd_morph,), ((wd_root, wd_affix),))
                     wd_stack.pop()
                     continue
                 elif wd_root in seg_dict:
@@ -50,9 +50,9 @@ def get_seg_dict_by_token_dict(token_seg_dict):
                         morphs.append(wd_morph[indx:indx+len(rt_morph)])
                         indx += len(rt_morph)
                     morphs.append(wd_morph[indx:])
-                    morphs.append(wd_suffix)
+                    morphs.append(wd_affix)
                     components = list(rt_seg[1])
-                    components.append((wd_root, wd_trans, wd_suffix))
+                    components.append((wd_root, wd_affix))
                     seg_dict[wd] = (tuple(morphs), tuple(components))
                     wd_stack.pop()
                     continue
@@ -104,8 +104,8 @@ def get_seg_dict_by_paradigms(paradigm_dict):
     # create a mapping from tokens to the transformation that creates them
     token_seg_dict = {}
     for root, word_list in paradigm_dict.items():
-        for word, trans, suffix, stem in word_list:
-            token_seg_dict[word] = (stem, suffix, root, trans)
+        for word, affix, stem in word_list:
+            token_seg_dict[word] = (stem, root, affix)
     # convert to a mapping from tokens to their segmentation info in a hierarchical structure
     seg_dict = get_seg_dict_by_token_dict(token_seg_dict)
     return seg_dict

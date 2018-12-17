@@ -5,13 +5,16 @@ Created on Jun 11, 2018
 '''
 
 
-def feature(root, suffix):
-    """Return the last char of root and the first char of suffix (the interface between the root and the suffix).
+def feature(root, affix, kind):
+    """Return the last char of root and the first char of affix, if the affix is a suffix. Otherwise, return the last
+    char of affix and the first char of root.
     
     This is explained after equation (2) in Section 5.
     """
-    if suffix == '$': return ('$', suffix)
-    return (root[-1], suffix[0])
+    if affix == '$': return ('$', affix)
+    if kind == 'suf':
+        return (root[-1], affix[0])
+    return (affix[-1], root[0])
 
 
 def get_initial_parameters(token_segs):
@@ -20,9 +23,9 @@ def get_initial_parameters(token_segs):
     This is explained in section 5 from the paper, and is GetPrior in the algorithm.
     """
     estems = {}  # tracks the average probability of each root
-    esuffix = {}  # tracks the average probability of each suffix
+    eaffix = {}  # tracks the average probability of each affix
     etrans = {}  # tracks the average probability of each (transition, feature) pair
-    eftrans = {}  # tracks the average probability of each feature (interface between stem and suffix)
+    eftrans = {}  # tracks the average probability of each feature (interface between stem and affix)
     
     # collect the probabilities of each object, to be normalized (divided by their totals) later
     for ts_list in token_segs:
@@ -33,17 +36,19 @@ def get_initial_parameters(token_segs):
             if root in estems: estems[root] += rand_val * avg_prob
             else: estems[root] = rand_val * avg_prob
             
-            suffix = ts.suffix
-            if suffix in esuffix: esuffix[suffix] += rand_val * avg_prob
-            else: esuffix[suffix] = rand_val * avg_prob
+            affix = ts.affix.affix
+            if affix in eaffix: eaffix[affix] += rand_val * avg_prob
+            else: eaffix[affix] = rand_val * avg_prob
             
-            trans = ts.trans
-            ftrans = feature(root, suffix)
-            if (trans, ftrans) in etrans: etrans[(trans, ftrans)] += rand_val * avg_prob
-            else: etrans[(trans, ftrans)] = rand_val * avg_prob
+            trans = ts.affix.trans
+            kind = ts.affix.kind
+            ftrans = feature(root, affix, kind)
+
+            if (trans, ftrans, kind) in etrans: etrans[(trans, ftrans, kind)] += rand_val * avg_prob
+            else: etrans[(trans, ftrans, kind)] = rand_val * avg_prob
             
-            if ftrans in eftrans: eftrans[ftrans] += rand_val * avg_prob
-            else: eftrans[ftrans] = rand_val * avg_prob
+            if (ftrans, kind) in eftrans: eftrans[(ftrans, kind)] += rand_val * avg_prob
+            else: eftrans[(ftrans, kind)] = rand_val * avg_prob
     
     # divide by the totals
     probstems = estems
@@ -51,14 +56,14 @@ def get_initial_parameters(token_segs):
     for stem in probstems:
         probstems[stem] /= probsum
     
-    probsuffix = esuffix
+    probsuffix = eaffix
     probsum = sum(probsuffix.values())
     for suffix in probsuffix:
         probsuffix[suffix] /= probsum
     
     probtrans = etrans
-    for trans, ftrans in probtrans:
-        probtrans[(trans, ftrans)] /= eftrans[ftrans]
+    for trans, ftrans, kind in probtrans:
+        probtrans[(trans, ftrans, kind)] /= eftrans[(ftrans, kind)]
 
     return probstems, probsuffix, probtrans
 
@@ -69,12 +74,13 @@ def calc_seg_prob(ts, probroots, probsuffix, probtrans):
     This is equation (3) from the paper.
     """
     root = ts.root
-    suffix = ts.suffix
-    trans = ts.trans
-    feat = feature(root, suffix)
+    affix = ts.affix.affix
+    trans = ts.affix.trans
+    kind = ts.affix.kind
+    feat = feature(root, affix, kind)
     score = 0.0
-    if root in probroots and suffix in probsuffix and (trans, feat) in probtrans:
-        score = probroots[root] * probsuffix[suffix] * probtrans[(trans, feat)]
+    if root in probroots and affix in probsuffix and (trans, feat, kind) in probtrans:
+        score = probroots[root] * probsuffix[affix] * probtrans[(trans, feat, kind)]
     return score
 
 
@@ -110,13 +116,13 @@ def do_step1_segmention(token_segs, probroots, probsuffix, probtrans):
     return resolved_segs
 
 
-def estimate_suffix_probability(suffix_freq_dict):
+def estimate_affix_probability(affix_freq_dict):
     """Convert a frequency dictionary into a probability dictionary by normalizing."""
-    suffix_prob_dict = {}
-    probsum = sum(suffix_freq_dict.values())
-    for suffix, freq in suffix_freq_dict.items():
-        suffix_prob_dict[suffix] = freq * 1.0 / probsum
-    return suffix_prob_dict
+    affix_prob_dict = {}
+    probsum = sum(affix_freq_dict.values())
+    for affix, freq in affix_freq_dict.items():
+        affix_prob_dict[affix] = freq * 1.0 / probsum
+    return affix_prob_dict
 
 
 
