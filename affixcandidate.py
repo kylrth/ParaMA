@@ -41,19 +41,19 @@ def group_affixes_by_stem_length(affixes):
 def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
     """Collect possible affix candidates with a dictionary of stem lengths and frequencies (counts of distinct stem
     lengths).
-    
+
     Optionally filter suffix candidates by minimum frequency.
     """
     affixes = {}
     for word in words:
         if len(word) <= min_stem_len:
             continue
-        
+
         # test all possible prefix-stem combinations
         for i in range(1, min(len(word) - min_stem_len, max_aff_len) + 1):
             left = word[:i]
             right = word[i:]
-            
+
             # if the right side is a word, save the prefix along with the length of the stem
             if right in words:
                 stem_len = len(right)
@@ -67,7 +67,7 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
                     affixes[left] = pref_len_dict
                 else:
                     affixes[left] = {stem_len: 1}
-        
+
         # test all possible stem-suffix combinations
         for i in range(max(min_stem_len, len(word) - max_aff_len), len(word)):
             left = word[:i]
@@ -86,7 +86,7 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
                     affixes[right] = suf_len_dict
                 else:
                     affixes[right] = {stem_len: 1}
-    
+
     if min_affix_freq <= 1:
         return affixes
     # filter infrequent affixes
@@ -95,7 +95,7 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
 
 def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
     """Calculate the expected stem length (confidence value) of a suffix.
-    
+
     This is equation (1) in the paper.
     """
     # smoothing by plus .001
@@ -134,12 +134,13 @@ def calc_affix_score_by_dist(paradigm_dict):
                     root_len_dist[root_len] += 1
                 else:
                     root_len_dist[root_len] = 1
-                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist  # This wasn't here before, but I think it should be. (???)
+                # This wasn't here before, but I think it should be. (???)
+                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
             else:
                 # use a len_dist of 1 for this affix
                 root_len_dist = {root_len:1}
                 affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
-    
+
     # sort by affix
     affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0].affix)
     # calculate the expected stem length
@@ -152,7 +153,7 @@ def calc_affix_score_by_dist(paradigm_dict):
 
 def filter_affixes(affixes, top_N=50):
     """Return the `top_N` most likely affixes for each affix length.
-    
+
     The list should be at most of length `top_N` * len(same_len_affix_dist).
     """
     filtered_affixes = []
@@ -176,7 +177,7 @@ def filter_affixes(affixes, top_N=50):
     pbar.close()
 
     # get just the affix and the confidence, and sort by confidence
-    filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _, _ in filtered_affixes], key = lambda x: -x[1])
+    filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _, _ in filtered_affixes], key=lambda x: -x[1])
     return filtered_affixes
 
 

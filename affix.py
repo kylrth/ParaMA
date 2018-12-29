@@ -10,7 +10,7 @@ class Affix(object):
     def __init__(self, affix, kind, trans='$'):
         """Save the string and the type (either prefix or suffix), along with any transformation that occurs to the stem
         along the morpheme boundary.
-        
+
         Default affix is no affix, expressed as '$'.
         Default transformation is no transformation, expressed as '$'.
         """
@@ -29,28 +29,28 @@ class Affix(object):
                 parts = '+'.join(trans.split('-')[1:]).split('+')
                 if len(parts) != 2:
                     raise ValueError('syntax error in substitution "{}"'.format(trans))
-                if len(parts[0]) == 0 or len(parts[1]) == 0:
+                if not parts[0] or not parts[1]:
                     raise ValueError('syntax error in substitution "{}"'.format(trans))
             elif trans[:4] not in ['DEL-', 'DUP+']:
                 raise ValueError('unrecognized transformation string "{}"'.format(trans))
-        
+
         self.trans = trans
 
     def __str__(self):
         """Print out the attributes in a tuple."""
         return '({}, {}, {})'.format(self.affix, self.kind, self.trans)
-    
+
     def __eq__(self, oth):
         """Return the equality of self to oth."""
-        return type(self) == type(oth) and self.affix == oth.affix and self.kind == oth.kind and self.trans == oth.trans
-    
+        return isinstance(oth, Affix) and self.affix == oth.affix and self.kind == oth.kind and self.trans == oth.trans
+
     def __key(self):
         """Return a unique identifier for use of the class in sets."""
         return (self.affix, self.kind, self.trans)
 
     def __hash__(self):
         return hash(self.__key())
-    
+
     def apply(self, in_string):
         """Apply the affix to a string, along with the specified transformation."""
         # apply the transformation
@@ -90,5 +90,5 @@ class Affix(object):
                 return self.affix + in_string
             else:
                 return in_string + self.affix
-        
+
         return in_string

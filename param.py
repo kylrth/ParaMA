@@ -15,14 +15,14 @@ class Parameter():
         self.DoPruning = True
         self.ExcludeUnreliable = True
         self.DoCompound = False
-        
+
         self.MinStemLen = 3
         self.MaxAffixLen = 6
-        
+
         self.DoHyphen = True
         self.DoApostrophe = True
         self.ApostropheChar = '\''
-        
+
         self.BestNCandAffix = 100
         self.MinAffixFreq = 3
         self.MinParadigmSupport = 2
@@ -40,28 +40,3 @@ class Parameter():
         print('DoHyphen: %s' % self.DoHyphen)
         print('DoApostrophe: %s' % self.DoApostrophe)
         print('-------------------------------------')
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
