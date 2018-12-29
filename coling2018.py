@@ -12,14 +12,15 @@ from morphanalyzer import MorphAnalyzer
 
 def read_word_freq_list(infile):
     """Read a file where each line contains a word and its frequency count, tab-separated.
-    
+
     Returns a list of tuples of the form (word, freq).
     """
     fin = open(infile, 'r', -1, 'utf-8')
     wordlist = []
     for line in fin:
         splitline = line.strip().split()
-        if len(line) == 0: continue
+        if not line:
+            continue
         word = splitline[0]
         freq = int(splitline[1])
         wordlist.append((word, freq))
@@ -29,7 +30,7 @@ def read_word_freq_list(infile):
 
 def read_test_gold(infile):
     """Read the gold-standard morphological segmentation from a file.
-    
+
     Each line contains a word, followed by a colon, and then a space-separated list of allowable morphological segments
     where the segments are separated by dashes.
 
@@ -147,17 +148,3 @@ if __name__ == '__main__':
     run_english()
     #run_turkish()
     #run_finnish()
-
-
-
-
-
-
-
-
-
-
-
-
-
-

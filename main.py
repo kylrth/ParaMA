@@ -1,5 +1,5 @@
-'''
-Created on Jun 12, 2018
+'''Command line utility to run morphological segmentation on specified files, with specified parameters. Created on Jun
+12, 2018.
 
 @author: xh
 '''
@@ -12,14 +12,15 @@ from morphanalyzer import MorphAnalyzer
 
 def read_word_freq_list(infile):
     """Read a file where each line contains a word and its frequency count, tab-separated.
-    
+
     Returns a list of tuples of the form (word, freq).
     """
     fin = open(infile, 'r', -1, 'utf-8')
     wordlist = []
     for line in fin:
         splitline = line.strip().split()
-        if len(line) == 0: continue
+        if not line:
+            continue
         word = splitline[0]
         freq = int(splitline[1])
         wordlist.append((word, freq))
@@ -53,45 +54,43 @@ def run(infile, outfile, params):
 
 
 if __name__ == '__main__':
-    """Command line utility to run morphological segmentation on specified files, with specified parameters."""
-    params = Parameter()
+    parameters = Parameter()
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('infile', help='The input file containing a word list with line format: <word> <freq>')
     arg_parser.add_argument('outfile', help='The output file to save the segmentation result')
-    arg_parser.add_argument('-p', '--prune', help='Whether use pruning (1|0, default:%s)' % params.DoPruning, type=bool, default=params.DoPruning)
-    arg_parser.add_argument('-t', '--trans', help='Whether use transformation rules (1|0, default:%s)' % params.UseTransRules, type=bool, default=params.UseTransRules)
-    arg_parser.add_argument('-c', '--comp', help='Whether process compounding (1|0, default:%s)' % params.DoCompound, type=bool, default=params.DoCompound)
-    arg_parser.add_argument('-e', '--excl', help='Whether exclude unreliable roots (1|0, default:%s)' % params.ExcludeUnreliable, type=bool, default=params.ExcludeUnreliable)
-    arg_parser.add_argument('-n', '--hyphen', help='Whether explicitly deal with hyphen words (1|0, default:%s)' % params.DoHyphen, type=bool, default=params.DoHyphen)
-    arg_parser.add_argument('-a', '--apos', help='Whether explicitly deal with apostrophes (1|0, default:%s)' % params.DoApostrophe, type=bool, default=params.DoApostrophe)
-    arg_parser.add_argument('-r', '--root', help='Minimal length of roots that will be possibly segmented (default:%s)' % params.MinStemLen, type=int, default=params.MinStemLen)
-    arg_parser.add_argument('-s', '--suff', help='Maximal length of suffixes (default:%s)' % params.MaxSuffixLen, type=int, default=params.MaxSuffixLen)
+    arg_parser.add_argument(
+        '-p', '--prune', help='Whether use pruning (1|0, default:%s)' % parameters.DoPruning, type=bool,
+        default=parameters.DoPruning)
+    arg_parser.add_argument(
+        '-t', '--trans', help='Whether use transformation rules (1|0, default:%s)' % parameters.UseTransRules,
+        type=bool, default=parameters.UseTransRules)
+    arg_parser.add_argument(
+        '-c', '--comp', help='Whether process compounding (1|0, default:%s)' % parameters.DoCompound, type=bool,
+        default=parameters.DoCompound)
+    arg_parser.add_argument(
+        '-e', '--excl', help='Whether exclude unreliable roots (1|0, default:%s)' % parameters.ExcludeUnreliable,
+        type=bool, default=parameters.ExcludeUnreliable)
+    arg_parser.add_argument(
+        '-n', '--hyphen', help='Whether explicitly deal with hyphen words (1|0, default:%s)' % parameters.DoHyphen,
+        type=bool, default=parameters.DoHyphen)
+    arg_parser.add_argument(
+        '-a', '--apos', help='Whether explicitly deal with apostrophes (1|0, default:%s)' % parameters.DoApostrophe,
+        type=bool, default=parameters.DoApostrophe)
+    arg_parser.add_argument(
+        '-r', '--root',
+        help='Minimal length of roots that will be possibly segmented (default:%s)' % parameters.MinStemLen, type=int,
+        default=parameters.MinStemLen)
+    arg_parser.add_argument(
+        '-s', '--suff', help='Maximal length of suffixes (default:%s)' % parameters.MaxSuffixLen, type=int,
+        default=parameters.MaxSuffixLen)
     args = arg_parser.parse_args()
-    params.DoPruning = args.prune
-    params.UseTransRules = args.trans
-    params.DoCompound = args.comp
-    params.ExcludeUnreliable = args.excl
-    params.DoHyphen = args.hyphen
-    params.DoApostrophe = args.apos
-    params.MinStemLen = args.root
-    params.MaxSuffixLen = args.suff
-    params.print_all()
-    run(args.infile, args.outfile, params)
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    parameters.DoPruning = args.prune
+    parameters.UseTransRules = args.trans
+    parameters.DoCompound = args.comp
+    parameters.ExcludeUnreliable = args.excl
+    parameters.DoHyphen = args.hyphen
+    parameters.DoApostrophe = args.apos
+    parameters.MinStemLen = args.root
+    parameters.MaxSuffixLen = args.suff
+    parameters.print_all()
+    run(args.infile, args.outfile, parameters)

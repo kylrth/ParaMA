@@ -36,12 +36,12 @@ def group_afx_by_length(affix_stem_len_dist):
 def gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq=1):
     """Collect possible suffix candidates with a dictionary of stem lengths and frequencies (counts of distinct stem
     lengths).
-    
+
     Optionally filter suffix candidates by minimum frequency.
     """
     suf_dict = {}
     for word in word_dict:
-        if len(word) <= min_stem_len: 
+        if len(word) <= min_stem_len:
             continue
         sIndx = max(min_stem_len, len(word) - max_suf_len)
         # test all possible stem-suffix combinations according to min_stem_len and max_suf_len
@@ -67,7 +67,7 @@ def gen_suf_cand_by_stem_len(word_dict, min_stem_len, max_suf_len, min_suf_freq=
 
 def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
     """Calculate the expected stem length (confidence value) of a suffix.
-    
+
     This is equation (1) in the paper.
     """
     # smoothing by plus .001
@@ -111,7 +111,7 @@ def calc_suf_score_by_dist(paradigm_dict):
                 # use a len_dist of 1 for this suffix
                 root_len_dist = {root_len:1}
                 suffix_root_len_dist[suffix] = root_len_dist
-    
+
     # sort by suffix
     suffix_root_len_dist = sorted(suffix_root_len_dist.items(), key=lambda x: x[0])
     # calculate the expected stem length
@@ -124,7 +124,7 @@ def calc_suf_score_by_dist(paradigm_dict):
 
 def filter_afxes(affix_root_len_dist, top_N=50):
     """Return the `top_N` most likely affixes for each affix length.
-    
+
     The list should be of length `top_N` * len(same_len_affix_dist).
     """
     filtered_affixes = []
@@ -140,7 +140,9 @@ def filter_afxes(affix_root_len_dist, top_N=50):
         top_N_afx = affix_len_exp[:top_N]  # get the top_N most likely affixes
         filtered_affixes.extend(top_N_afx)
     # get just the affix and the confidence, and sort by confidence
-    filtered_affixes = sorted([(afx, afx_score) for afx, afx_score, _count, _len_exp in filtered_affixes], key = lambda x: -x[1])
+    filtered_affixes = sorted(
+        [(afx, afx_score) for afx, afx_score, _count, _len_exp in filtered_affixes],
+        key=lambda x: -x[1])
     return filtered_affixes
 
 

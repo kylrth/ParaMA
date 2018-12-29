@@ -7,7 +7,7 @@ Created on Jun 11, 2018
 
 def get_seg_points(seg):
     """Get the indices where the word was split in `seg`.
-    
+
     For example: get_seg_points(('beauti', 'ful', 'ly')) -> [6, 9]
     """
     seg_points = []
@@ -20,7 +20,7 @@ def get_seg_points(seg):
 
 def get_best_seg(seg_test, segs_gold):
     """Choose the gold standard segmentation that matches most closely with `seg_test`.
-    
+
     If none match at any indices, return the one with the least number of segments.
     """
     seg_points_test = set(get_seg_points(seg_test))
@@ -48,15 +48,15 @@ def get_best_seg(seg_test, segs_gold):
 def eval_seg_points(seg_gold, seg_test):
     """Return precision, recall, and F1-score of each predicted segmentation from `seg_test` compared with its closest
     match from the corresponding segmentations in `seg_gold`.
-    
+
     If no gold segmentation matches at any indices, compare with the gold segmentation with the least number of
     segments.
     """
-    if len(seg_gold) != len(seg_test): return 0.0, 0.0, 0.0
+    if len(seg_gold) != len(seg_test):
+        return 0.0, 0.0, 0.0
     correct_total, gold_total, pred_total = 0, 0, 0
     # choose the closest gold standard segmentation
-    for i in range(len(seg_gold)):
-        goldsegs = seg_gold[i]
+    for i, goldsegs in enumerate(seg_gold):
         test = seg_test[i]
         word = ''.join(test)
         seg_points_test = set(get_seg_points(test))
@@ -81,7 +81,7 @@ def eval_seg_points(seg_gold, seg_test):
         correct_total += best_correct
         gold_total += best_total
         pred_total += pred_size
-    
+
     # calculate precision, recall, and F1-score
     if pred_total == 0:
         prec = 0.0
@@ -102,9 +102,9 @@ def get_seg_morphemes(seg):
     """Return a list of tuples where each tuple contains the starting and ending indices for a morpheme."""
     seg_morphemes = []
     sIndx = 0
-    for i in range(len(seg)):
+    for item in seg:
         # get index of the end of this morpheme by adding its length to the starting index
-        eIndx = sIndx + len(seg[i])
+        eIndx = sIndx + len(item)
         seg_morphemes.append((sIndx, eIndx))
         sIndx = eIndx  # the end of this morpheme is the start of the next
     return seg_morphemes
@@ -114,7 +114,7 @@ def calc_performance(tp, fp, fn):
     """Calculate precision, recall, and F1-score based on true positives, false positives, and false negatives."""
     # ensure no division by zero by returning zeros if tp (the numerator) is zero
     prec, rec, f1 = 0.0, 0.0, 0.0
-    if tp > 0: 
+    if tp > 0:
         prec = tp * 1.0 / (tp + fp)
         rec = tp * 1.0 / (tp + fn)
         f1 = 2 * prec * rec / (prec + rec)
@@ -123,10 +123,10 @@ def calc_performance(tp, fp, fn):
 
 def eval_seg_morphemes(seg_gold, seg_test):
     """Get the precision, recall, and F1-score of the predictions for each morpheme in each word."""
-    if len(seg_gold) != len(seg_test): return 0.0, 0.0, 0.0
+    if len(seg_gold) != len(seg_test):
+        return 0.0, 0.0, 0.0
     tp, fp, fn = 0, 0, 0
-    for i in range(len(seg_gold)):
-        goldsegs = seg_gold[i]
+    for i, goldsegs in enumerate(seg_gold):
         test = seg_test[i]
         # get the starting and ending indices of each morpheme
         seg_morphemes_test = set(get_seg_morphemes(test))
@@ -141,7 +141,7 @@ def eval_seg_morphemes(seg_gold, seg_test):
             fp_local = len(seg_morphemes_test - seg_morphemes_gold)  # the number of predicted tuples not in gold
             fn_local = len(seg_morphemes_gold - seg_morphemes_test)  # the number of gold tuples not predicted
             _prec_local, _rec_local, f1_local = calc_performance(tp_local, fp_local, fn_local)
-            if f1_local > f1_best or (f1_local == f1_best and fp_local + fn_local < fp_best + fn_best): 
+            if f1_local > f1_best or (f1_local == f1_best and fp_local + fn_local < fp_best + fn_best):
                 tp_best, fp_best, fn_best = tp_local, fp_local, fn_local
                 f1_best = f1_local
         tp += tp_best
@@ -152,10 +152,10 @@ def eval_seg_morphemes(seg_gold, seg_test):
 
 def eval_last_morphemes(seg_gold, seg_test):
     """Get the precision, recall, and F1-score of the predictions of the last morpheme for each word."""
-    if len(seg_gold) != len(seg_test): return 0.0, 0.0, 0.0
+    if len(seg_gold) != len(seg_test):
+        return 0.0, 0.0, 0.0
     tp, fp, fn = 0, 0, 0
-    for i in range(len(seg_gold)):
-        goldsegs = seg_gold[i]
+    for i, goldsegs in enumerate(seg_gold):
         test = seg_test[i]
         # get the starting and ending indices of the last predicted morpheme
         last_morph_indx = {get_seg_morphemes(test)[-1]}
@@ -170,7 +170,7 @@ def eval_last_morphemes(seg_gold, seg_test):
             fp_local = len(last_morph_indx - seg_morphemes_gold_indx)  # 1 if the indices are different
             fn_local = len(seg_morphemes_gold_indx - last_morph_indx)  # 1 if the indices are different
             _prec_local, _rec_local, f1_local = calc_performance(tp_local, fp_local, fn_local)
-            if f1_local > f1_best or (f1_local == f1_best and fp_local + fn_local < fp_best + fn_best): 
+            if f1_local > f1_best or (f1_local == f1_best and fp_local + fn_local < fp_best + fn_best):
                 tp_best, fp_best, fn_best = tp_local, fp_local, fn_local
                 f1_best = f1_local
         tp += tp_best
@@ -188,13 +188,3 @@ def evaluate_seg(gold_segs, test_segs):
     print('Seg Points:      (%.4f, %.4f, %.4f)' % (prec3, rec3, f13))
     print('All Morphemes:   (%.4f, %.4f, %.4f)' % (prec2, rec2, f12))
     print('Last Morpheme:   (%.4f, %.4f, %.4f)' % (prec1, rec1, f11))
-
-
-
-
-
-
-
-
-
-
