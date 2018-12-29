@@ -100,7 +100,7 @@ def filter_affix_tuple(affix_tuple_dict, min_support, min_tuple_size):
             continue  # productivity requirement
         long_affix_count = 0
         for affix in affix_tuple:
-            if len(affix) > 1:
+            if len(affix.affix) > 1:
                 long_affix_count += 1
         filtered_affix_tuple_dict[affix_tuple] = root_list
     return filtered_affix_tuple_dict

@@ -12,10 +12,13 @@ from affix import Affix
 
 def filter_affixes_by_freq(affix_dict, min_afx_freq):
     """Filter affix dictionary by a minimum affix frequency, where the frequency is a count of distinct stem-lengths."""
+    if min_afx_freq <= 1:  # don't filter anything
+        return affix_dict
+
     new_dict = {}
     for affix, stem_len_dist in affix_dict.items():
         count = sum(stem_len_dist.values())
-        if count < min_afx_freq:
+        if count >= min_afx_freq:
             new_dict[affix] = stem_len_dist
     return new_dict
 
@@ -50,12 +53,13 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
             continue
 
         # test all possible prefix-stem combinations
-        for i in range(1, min(len(word) - min_stem_len, max_aff_len) + 1):
+        edge = max(min_stem_len, len(word) - max_aff_len)
+        for i in range(1, len(word)):
             left = word[:i]
             right = word[i:]
 
             # if the right side is a word, save the prefix along with the length of the stem
-            if right in words:
+            if len(right) >= edge and right in words:
                 stem_len = len(right)
                 left = Affix(left, 'pref')
                 if left in affixes:
@@ -64,17 +68,11 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
                         pref_len_dict[stem_len] += 1
                     else:
                         pref_len_dict[stem_len] = 1
-                    affixes[left] = pref_len_dict
                 else:
                     affixes[left] = {stem_len: 1}
 
-        # test all possible stem-suffix combinations
-        for i in range(max(min_stem_len, len(word) - max_aff_len), len(word)):
-            left = word[:i]
-            right = word[i:]
-
             # if the left side is a word, save the suffix along with the length of the stem
-            if left in words:
+            if i >= edge and left in words:
                 stem_len = len(left)
                 right = Affix(right, 'suf')
                 if right in affixes:
@@ -83,12 +81,9 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
                         suf_len_dict[stem_len] += 1
                     else:
                         suf_len_dict[stem_len] = 1
-                    affixes[right] = suf_len_dict
                 else:
                     affixes[right] = {stem_len: 1}
 
-    if min_affix_freq <= 1:
-        return affixes
     # filter infrequent affixes
     return filter_affixes_by_freq(affixes, min_affix_freq)
 
@@ -142,7 +137,7 @@ def calc_affix_score_by_dist(paradigm_dict):
                 affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
 
     # sort by affix
-    affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0].affix)
+    affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0][0])
     # calculate the expected stem length
     affix_len_exp = calc_expected_stem_len(affix_root_len_dist, min_root_len, max_root_len)
     # use the stem length as a score for each affix

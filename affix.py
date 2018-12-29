@@ -37,8 +37,12 @@ class Affix(object):
         self.trans = trans
 
     def __str__(self):
+        """Print using __repr__."""
+        return self.__repr__()
+
+    def __repr__(self):
         """Print out the attributes in a tuple."""
-        return '({}, {}, {})'.format(self.affix, self.kind, self.trans)
+        return 'Affix({}, {}, {})'.format(self.affix, self.kind, self.trans)
 
     def __eq__(self, oth):
         """Return the equality of self to oth."""

@@ -129,14 +129,14 @@ class TokenAnalyzer:
             return segs
 
         # The word is long enough to be morphologically complex, so check for possible affixes.
-        s_indx = max(self.min_stem_len, len(token)-self.max_suffix_len)
-        for indx in range(s_indx, len(token)):
+        edge = max(self.min_stem_len, len(token) - self.max_suffix_len)
+        for indx in range(1, len(token)):
             # avoid the single character suffix with a large number of non-occurring roots, by starting with a small
             # stem and increasing until a word is encountered
-
             left = token[indx:]
             right = token[:indx]
-            if Affix(left, 'pref') in self.affix_dict:  # if `left` is a valid prefix
+
+            if len(right) >= edge and Affix(left, 'pref') in self.affix_dict:  # if `left` is a valid prefix
                 morph = right
                 root = morph
                 affix = left
@@ -151,7 +151,7 @@ class TokenAnalyzer:
                     ts = self.get_trans_rules(token, morph, root, affix, 'pref')
                     if ts:
                         segs.append(ts)
-            elif Affix(right, 'suf') in self.affix_dict:  # if `right` is a valid suffix
+            if indx >= edge and Affix(right, 'suf') in self.affix_dict:  # if `right` is a valid suffix
                 morph = left
                 root = morph
                 affix = right
