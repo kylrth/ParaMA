@@ -11,11 +11,11 @@ def feature(root, affix, kind):
 
     This is explained after equation (2) in Section 5.
     """
-    if affix == '$':
-        return ('$', affix)
+    if affix.affix == '$':
+        return ('$', affix.affix)
     if kind == 'suf':
-        return (root[-1], affix[0])
-    return (affix[-1], root[0])
+        return (root[-1], affix.affix[0])
+    return (affix.affix[-1], root[0])
 
 
 def get_initial_parameters(token_segs):
@@ -39,7 +39,7 @@ def get_initial_parameters(token_segs):
             else:
                 estems[root] = rand_val * avg_prob
 
-            affix = ts.affix.affix
+            affix = ts.affix
             if affix in eaffix:
                 eaffix[affix] += rand_val * avg_prob
             else:
@@ -83,9 +83,9 @@ def calc_seg_prob(ts, probroots, probsuffix, probtrans):
     This is equation (3) from the paper.
     """
     root = ts.root
-    affix = ts.affix.affix
-    trans = ts.affix.trans
-    kind = ts.affix.kind
+    affix = ts.affix
+    trans = affix.trans
+    kind = affix.kind
     feat = feature(root, affix, kind)
     score = 0.0
     if root in probroots and affix in probsuffix and (trans, feat, kind) in probtrans:

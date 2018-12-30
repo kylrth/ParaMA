@@ -24,6 +24,15 @@ class SegStructure():
         """Determine whether the word is atomic, as defined in section 3 of the paper."""
         return self.token == self.root
 
+    def __repr__(self):
+        """Produce a description of the object."""
+        return 'SegStructure({}, {}, {}, {})'.format(
+            self.token,
+            self.morph,
+            self.root,
+            self.affix
+        )
+
 
 class TokenAnalyzer:
     """Class for analyzing tokens."""
@@ -37,7 +46,7 @@ class TokenAnalyzer:
         self.max_suffix_len = max_suffix_len
         self.use_trans_rules = use_trans_rules
 
-    def get_trans_rules(self, token, morph, root, affix, kind):
+    def get_trans_rules(self, token, morph, affix, kind):
         """Get the transformation rules that occur when `affix` is applied to `root` to get `token`, and return the
         SegStructure.
 
@@ -55,23 +64,23 @@ class TokenAnalyzer:
         # Deletion
         if morph in morph_dict:
             for root in morph_dict[morph]:
-                if kind == 'suf' and (root + affix) in self.word_dict:
+                if kind == 'suf' and root + affix in self.word_dict:
                     continue
-                if kind == 'pref' and (affix + root) in self.word_dict:
+                if kind == 'pref' and affix + root in self.word_dict:
                     continue
 
-                if kind == 'suf' and root[-1] == affix[0]:
+                if kind == 'suf':  # and root[-1] == affix[0]
                     # : voiced = voic(voice-e)+ed
                     trans = 'DEL-' + root[-1]
                     return SegStructure(token, morph, root, Affix(affix, kind, trans))
-                elif kind == 'pref' and root[0] == affix[-1]:
+                if kind == 'pref':  # and root[0] == affix[-1]
                     trans = 'DEL-' + root[0]
                     return SegStructure(token, morph, root, Affix(affix, kind, trans))
 
         # Substitution
         # : carried = carry -y+i + ed; morph = carri
         if kind == 'suf':
-            if (morph[:-1] in morph_dict) and (not morph in self.word_dict):
+            if morph[:-1] in morph_dict and morph not in self.word_dict:
                 # avoid painting = paint SUB-t+t +ing
                 for root in morph_dict[morph[:-1]]:
                     if root == morph:
@@ -82,7 +91,7 @@ class TokenAnalyzer:
                     trans = 'SUB-%s+%s' % (root[-1], morph[-1])
                     return SegStructure(token, morph, root, Affix(affix, kind, trans))
         else:  # 'pref'
-            if (morph[1:] in morph_dict) and (not morph in self.word_dict):
+            if morph[1:] in morph_dict and morph not in self.word_dict:
                 # avoid painting = paint SUB-t+t +ing
                 for root in morph_dict[morph[1:]]:
                     if root == morph:
@@ -122,9 +131,7 @@ class TokenAnalyzer:
             # this word is morphologically simple, so it is atomic. Store it as such.
             root = token
             morph = token
-            trans = '$'
-            affix = '$'
-            ts = SegStructure(token, morph, root, Affix(affix, 'pref', trans))
+            ts = SegStructure(token, morph, root, Affix('$', 'pref', '$'))
             segs.append(ts)
             return segs
 
@@ -133,37 +140,35 @@ class TokenAnalyzer:
         for indx in range(1, len(token)):
             # avoid the single character suffix with a large number of non-occurring roots, by starting with a small
             # stem and increasing until a word is encountered
-            left = token[indx:]
-            right = token[:indx]
+            left = token[:indx]
+            right = token[indx:]
 
             if len(right) >= edge and Affix(left, 'pref') in self.affix_dict:  # if `left` is a valid prefix
                 morph = right
-                root = morph
-                affix = left
+                root = right
                 if root in self.word_dict:  # if the remaining part is a known word
                     ts = SegStructure(token, morph, root, Affix(left, 'pref', '$'))
                     segs.append(ts)
                     continue
-                if len(affix) < 2:
+                if len(left) < 2:
                     continue
                 if self.use_trans_rules:
                     # get the most likely transition rule if there is one
-                    ts = self.get_trans_rules(token, morph, root, affix, 'pref')
+                    ts = self.get_trans_rules(token, morph, left, 'pref')
                     if ts:
                         segs.append(ts)
             if indx >= edge and Affix(right, 'suf') in self.affix_dict:  # if `right` is a valid suffix
                 morph = left
-                root = morph
-                affix = right
+                root = left
                 if root in self.word_dict:  # if the remaining part is a known word
                     ts = SegStructure(token, morph, root, Affix(right, 'suf', '$'))
                     segs.append(ts)
                     continue
-                if len(affix) < 2:
+                if len(right) < 2:
                     continue
                 if self.use_trans_rules:
                     # get the most likely transition rule if there is one
-                    ts = self.get_trans_rules(token, morph, root, affix, 'suf')
+                    ts = self.get_trans_rules(token, morph, right, 'suf')
                     if ts:
                         segs.append(ts)
 

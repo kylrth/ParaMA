@@ -64,8 +64,14 @@ class MorphAnalyzer():
             print('--segment tokens')  # get the most likely segmentation from those listed as possible in `token_segs`
             resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
 
+            if prior_prob_affix:
+                print(resolved_segs)
+                input()
             print('--create paradigms')
-            paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs)
+            paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs, prior_prob_affix)
+            if prior_prob_affix:
+                print(paradigm_dict)
+                input()
 
             print('--get paradigm suffix sets')  # get a set of suffixes for each root
             root_affix_set_list = get_paradigm_affix_sets(paradigm_dict)
@@ -283,6 +289,8 @@ class MorphAnalyzer():
 
         # get paradigms with reliable affixes
         reliable_affix_tuples, single_affix_tuples, affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
+        print('DEBUG:', reliable_affix_tuples, sep='\n')
+        input()
 
         print('| Generate tokens candidate segmentations')
         token_analyzer = TokenAnalyzer(

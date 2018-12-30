@@ -92,7 +92,6 @@ class Affix(object):
         if self.affix != '$':
             if self.kind == 'pref':
                 return self.affix + in_string
-            else:
-                return in_string + self.affix
+            return in_string + self.affix
 
         return in_string

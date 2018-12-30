@@ -41,7 +41,7 @@ def prune_affix_tuple(affix_tuple, affix_tuple_dict, affix_type_score):
         for affix in affix_tuple:
             if affix in affix_set:
                 satisfied_affix.append(affix)
-        if len(satisfied_affix) < 1:
+        if not satisfied_affix:
             continue
         satisfied_tuples.append(satisfied_affix)
 
