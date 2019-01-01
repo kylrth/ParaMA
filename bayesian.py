@@ -15,6 +15,7 @@ def feature(root, affix, kind):
         return ('$', affix.affix)
     if kind == 'suf':
         return (root[-1], affix.affix[0])
+    # pref
     return (affix.affix[-1], root[0])
 
 
@@ -33,31 +34,30 @@ def get_initial_parameters(token_segs):
         avg_prob = 1.0 / len(ts_list)
         for ts in ts_list:
             root = ts.root
-            rand_val = 1.0
             if root in estems:
-                estems[root] += rand_val * avg_prob
+                estems[root] += avg_prob
             else:
-                estems[root] = rand_val * avg_prob
+                estems[root] = avg_prob
 
-            affix = ts.affix
-            if affix in eaffix:
-                eaffix[affix] += rand_val * avg_prob
+            affix = ts.affix.affix
+            kind = ts.affix.kind
+            if (affix, kind) in eaffix:
+                eaffix[(affix, kind)] += avg_prob
             else:
-                eaffix[affix] = rand_val * avg_prob
+                eaffix[(affix, kind)] = avg_prob
 
             trans = ts.affix.trans
-            kind = ts.affix.kind
-            ftrans = feature(root, affix, kind)
+            ftrans = feature(root, ts.affix, kind)
 
             if (trans, ftrans, kind) in etrans:
-                etrans[(trans, ftrans, kind)] += rand_val * avg_prob
+                etrans[(trans, ftrans, kind)] += avg_prob
             else:
-                etrans[(trans, ftrans, kind)] = rand_val * avg_prob
+                etrans[(trans, ftrans, kind)] = avg_prob
 
             if (ftrans, kind) in eftrans:
-                eftrans[(ftrans, kind)] += rand_val * avg_prob
+                eftrans[(ftrans, kind)] += avg_prob
             else:
-                eftrans[(ftrans, kind)] = rand_val * avg_prob
+                eftrans[(ftrans, kind)] = avg_prob
 
     # divide by the totals
     probstems = estems
@@ -65,35 +65,35 @@ def get_initial_parameters(token_segs):
     for stem in probstems:
         probstems[stem] /= probsum
 
-    probsuffix = eaffix
-    probsum = sum(probsuffix.values())
-    for suffix in probsuffix:
-        probsuffix[suffix] /= probsum
+    probaffix = eaffix
+    probsum = sum(probaffix.values())
+    for affix in probaffix:
+        probaffix[affix] /= probsum
 
     probtrans = etrans
     for trans, ftrans, kind in probtrans:
         probtrans[(trans, ftrans, kind)] /= eftrans[(ftrans, kind)]
 
-    return probstems, probsuffix, probtrans
+    return probstems, probaffix, probtrans
 
 
-def calc_seg_prob(ts, probroots, probsuffix, probtrans):
+def calc_seg_prob(ts, probroots, probaffix, probtrans):
     """Calculate the score of a single segmentation `ts`, based on the probabilities given by the other parameters.
 
     This is equation (3) from the paper.
     """
     root = ts.root
-    affix = ts.affix
-    trans = affix.trans
-    kind = affix.kind
-    feat = feature(root, affix, kind)
+    affix = ts.affix.affix
+    trans = ts.affix.trans
+    kind = ts.affix.kind
+    feat = feature(root, ts.affix, kind)
     score = 0.0
-    if root in probroots and affix in probsuffix and (trans, feat, kind) in probtrans:
-        score = probroots[root] * probsuffix[affix] * probtrans[(trans, feat, kind)]
+    if root in probroots and (affix, kind) in probaffix and (trans, feat, kind) in probtrans:
+        score = probroots[root] * probaffix[(affix, kind)] * probtrans[(trans, feat, kind)]
     return score
 
 
-def calc_seg_probs(token_segs, probroots, probsuffix, probtrans):
+def calc_seg_probs(token_segs, probroots, probaffix, probtrans):
     """Calculate the scores of segmentations in `token_segs`, based on the probabilities given by the other parameters.
 
     Return the sorted list of probabilities for each segmentation.
@@ -103,21 +103,21 @@ def calc_seg_probs(token_segs, probroots, probsuffix, probtrans):
         seg_probs = []
         token = segs[0].token
         for ts in segs:
-            score = calc_seg_prob(ts, probroots, probsuffix, probtrans)
+            score = calc_seg_prob(ts, probroots, probaffix, probtrans)
             seg_probs.append((ts, score))
         seg_probs = sorted(seg_probs, key=lambda x: -x[1])
         token_seg_probs.append((token, seg_probs))
     return token_seg_probs
 
 
-def do_step1_segmention(token_segs, probroots, probsuffix, probtrans):
+def do_step1_segmention(token_segs, probroots, probaffix, probtrans):
     """Find the most likely token segmentation among those listed for each token."""
     resolved_segs = []
     for segs in token_segs:
         max_score = -1.0
         best_ts = None
         for ts in segs:
-            score = calc_seg_prob(ts, probroots, probsuffix, probtrans)
+            score = calc_seg_prob(ts, probroots, probaffix, probtrans)
             if score > max_score:
                 best_ts = ts
                 max_score = score

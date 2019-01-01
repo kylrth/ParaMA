@@ -59,17 +59,17 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
             right = word[i:]
 
             # if the right side is a word, save the prefix along with the length of the stem
-            if len(right) >= edge and right in words:
-                stem_len = len(right)
-                left = Affix(left, 'pref')
-                if left in affixes:
-                    pref_len_dict = affixes[left]  # frequency dictionary of stem lengths for this prefix
-                    if stem_len in pref_len_dict:
-                        pref_len_dict[stem_len] += 1
-                    else:
-                        pref_len_dict[stem_len] = 1
-                else:
-                    affixes[left] = {stem_len: 1}
+            # if len(right) >= edge and right in words:
+            #     stem_len = len(right)
+            #     left = Affix(left, 'pref')
+            #     if left in affixes:
+            #         pref_len_dict = affixes[left]  # frequency dictionary of stem lengths for this prefix
+            #         if stem_len in pref_len_dict:
+            #             pref_len_dict[stem_len] += 1
+            #         else:
+            #             pref_len_dict[stem_len] = 1
+            #     else:
+            #         affixes[left] = {stem_len: 1}
 
             # if the left side is a word, save the suffix along with the length of the stem
             if i >= edge and left in words:

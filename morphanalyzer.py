@@ -50,11 +50,21 @@ class MorphAnalyzer():
         affix_dict = dict(gen_N_best_affixes(
             word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxAffixLen,
             best_N=self.param.BestNCandAffix))
+
         for _ in range(2):  # 2 epochs
+            if prior_prob_affix:
+                print(affix_dict)
+                print('affix_dict')
+                input()
             ta = TokenAnalyzer(
                 reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules)
             print('--analyze possible segmentations for tokens')
-            token_segs = ta.analyze_token_list(reliable_word_dict.keys())
+            token_segs = ta.analyze_token_list(reliable_word_dict.keys(), prior_prob_affix)
+            for seg in token_segs:
+                if 'colonial' in repr(seg):
+                    print(seg)
+            print('token_segs')
+            input()
 
             print('--get initial parameters')  # initial probabilities for roots, suffixes, and transitions
             probroots, probaffix, probtrans = get_initial_parameters(token_segs)
@@ -64,14 +74,8 @@ class MorphAnalyzer():
             print('--segment tokens')  # get the most likely segmentation from those listed as possible in `token_segs`
             resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
 
-            if prior_prob_affix:
-                print(resolved_segs)
-                input()
             print('--create paradigms')
-            paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs, prior_prob_affix)
-            if prior_prob_affix:
-                print(paradigm_dict)
-                input()
+            paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs)
 
             print('--get paradigm suffix sets')  # get a set of suffixes for each root
             root_affix_set_list = get_paradigm_affix_sets(paradigm_dict)
@@ -84,6 +88,9 @@ class MorphAnalyzer():
 
             # use these suffix probabilities at the next iteration
             prior_prob_affix = estimate_affix_probability(affix_dict)
+            print(prior_prob_affix)
+            print('prior_prob_affix')
+            input()
 
         return reliables, singles, reliable_type_dict
 

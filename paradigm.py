@@ -8,7 +8,7 @@ Created on Jun 11, 2018
 from reliableroot import is_reliable_root
 
 
-def create_paradigms(token_structs, prior):
+def create_paradigms(token_structs):
     """Create a dictionary of paradigms (maps from roots to their possible affixated forms).
 
     Also collect a dictionary of atomic words.
@@ -21,17 +21,13 @@ def create_paradigms(token_structs, prior):
         word = ts.token
         root = ts.root
         if affix.affix == '$':  # this is an atomic word
-            if prior:
-                print(((word,), ((word, '$', '$'),)))
             atomic_word_dict[word] = ((word,), ((word, '$', '$'),))
             continue
         # this is a morphologically complex word
-        if prior:
-            print(root, ':', (word, affix.affix, affix.kind, morph))
         if root in paradigm_dict:
-            paradigm_dict[root].append((word, affix.affix, affix.kind, morph))
+            paradigm_dict[root].append((word, affix.trans, affix.affix, affix.kind, morph))
         else:
-            paradigm_dict[root] = [(word, affix.affix, affix.kind, morph)]
+            paradigm_dict[root] = [(word, affix.trans, affix.affix, affix.kind, morph)]
     return paradigm_dict, atomic_word_dict
 
 
@@ -39,7 +35,7 @@ def get_paradigm_affix_sets(paradigm_dict):
     """For each root, collect the set of possible suffixes."""
     root_suffix_tuple_list = []
     for root, derived_word_list in paradigm_dict.items():
-        affix_set = {(x[1], x[2]) for x in derived_word_list}  # affixes are the first element; see create_paradigms
+        affix_set = {(x[2], x[3]) for x in derived_word_list}  # affixes are the second element; see create_paradigms
         root_suffix_tuple_list.append((root, affix_set))
     return root_suffix_tuple_list
 
