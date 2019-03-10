@@ -125,7 +125,7 @@ class TokenAnalyzer:
 
         return tses
 
-    def analyze_token(self, token, debug=False):
+    def analyze_token(self, token):
         """Get possible segmentations for each possible division of the token into a morph and a suffix.
 
         Use rules to determine the simplest transformation accounting for any differences between underlying and surface
@@ -133,8 +133,6 @@ class TokenAnalyzer:
         """
         segs = []
         if len(token) <= self.min_stem_len:
-            if debug and 'colonial' in token:
-                print('aaaaaaaaaaaaa')
             # this word is morphologically simple, so it is atomic. Store it as such.
             root = token
             morph = token
@@ -180,19 +178,17 @@ class TokenAnalyzer:
                         segs.extend(tses)
 
         if not segs:  # produce at least one possible segmentation if none were found
-            if debug and 'colonial' in token:
-                print('bbbbbbbbbbbbb')
             root = token
             morph = token
             ts = SegStructure(token, morph, root, Affix('$', 'pref'))
             segs.append(ts)
         return segs
 
-    def analyze_token_list(self, token_list, debug=False):
+    def analyze_token_list(self, token_list):
         """Apply self.analyze_token to each token in the list."""
         token_segs = []
         for token in token_list:
-            segs = self.analyze_token(token, debug)
+            segs = self.analyze_token(token)
             token_segs.append(segs)
         return token_segs
 

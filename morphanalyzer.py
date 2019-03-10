@@ -46,30 +46,19 @@ class MorphAnalyzer():
         print('--get reliable words')
         reliable_word_dict = self.__get_frequent_long_words(word_dict)
         print('--create token analyzer')
-        prior_prob_affix = {}
         affix_dict = dict(gen_N_best_affixes(
             word_dict, min_stem_len=self.param.MinStemLen, max_suf_len=self.param.MaxAffixLen,
             best_N=self.param.BestNCandAffix))
 
         for _ in range(2):  # 2 epochs
-            if prior_prob_affix:
-                print(affix_dict)
-                print('affix_dict')
-                input()
             ta = TokenAnalyzer(
-                reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules)
+                reliable_word_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules
+            )
             print('--analyze possible segmentations for tokens')
-            token_segs = ta.analyze_token_list(reliable_word_dict.keys(), prior_prob_affix)
-            for seg in token_segs:
-                if 'colonial' in repr(seg):
-                    print(seg)
-            print('token_segs')
-            input()
+            token_segs = ta.analyze_token_list(reliable_word_dict.keys())
 
             print('--get initial parameters')  # initial probabilities for roots, suffixes, and transitions
             probroots, probaffix, probtrans = get_initial_parameters(token_segs)
-            if prior_prob_affix:
-                probaffix = prior_prob_affix  # (???)
 
             print('--segment tokens')  # get the most likely segmentation from those listed as possible in `token_segs`
             resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
@@ -82,15 +71,19 @@ class MorphAnalyzer():
 
             print('--prune paradigms')
             reliables, singles, reliable_type_dict = get_reliable_affix_tuples(
-                root_affix_set_list, word_dict, self.param.MinParadigmSupport, self.param.MinParadigmAffix,
-                self.param.MinAffixFreq)
-            affix_dict = reliable_type_dict
+                root_affix_set_list,
+                word_dict,
+                self.param.MinParadigmSupport,
+                self.param.MinParadigmAffix,
+                self.param.MinAffixFreq
+            )
+            # convert back to keys of type Affix rather than just tuples
+            affix_dict = {}
+            for affix, kind in reliable_type_dict:
+                affix_dict[Affix(affix, kind)] = reliable_type_dict[(affix, kind)]
 
             # use these suffix probabilities at the next iteration
             prior_prob_affix = estimate_affix_probability(affix_dict)
-            print(prior_prob_affix)
-            print('prior_prob_affix')
-            input()
 
         return reliables, singles, reliable_type_dict
 
@@ -295,14 +288,24 @@ class MorphAnalyzer():
         train_dict = self.__process_tokens(train_word_freq_list)
 
         # get paradigms with reliable affixes
-        reliable_affix_tuples, single_affix_tuples, affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
-        print('DEBUG:', reliable_affix_tuples, sep='\n')
-        input()
+        reliable_affix_tuples, single_affix_tuples, temp_affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
+        # good to here!!!!!!
+
+        # change the keys from (affix, kind) to Affix(affix, kind)
+        affix_dict = {}
+        for aff, kind in temp_affix_dict:
+            affix_dict[Affix(aff, kind)] = temp_affix_dict[(aff, kind)]
 
         print('| Generate tokens candidate segmentations')
         token_analyzer = TokenAnalyzer(
-            train_dict, affix_dict, self.param.MinStemLen, self.param.MaxAffixLen, self.param.UseTransRules)
+            train_dict,
+            affix_dict,
+            self.param.MinStemLen,
+            self.param.MaxAffixLen,
+            self.param.UseTransRules
+        )
         token_segs = token_analyzer.analyze_token_list(train_dict.keys())
+        # good to here for sure
 
         print('| Obtain statistics')
         probroots, _probaffix, probtrans = get_initial_parameters(token_segs)
