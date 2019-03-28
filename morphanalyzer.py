@@ -70,22 +70,18 @@ class MorphAnalyzer():
             root_affix_set_list = get_paradigm_affix_sets(paradigm_dict)
 
             print('--prune paradigms')
-            reliables, singles, reliable_type_dict = get_reliable_affix_tuples(
+            reliables, singles, affix_dict = get_reliable_affix_tuples(
                 root_affix_set_list,
                 word_dict,
                 self.param.MinParadigmSupport,
                 self.param.MinParadigmAffix,
                 self.param.MinAffixFreq
             )
-            # convert back to keys of type Affix rather than just tuples
-            affix_dict = {}
-            for affix, kind in reliable_type_dict:
-                affix_dict[Affix(affix, kind)] = reliable_type_dict[(affix, kind)]
 
             # use these suffix probabilities at the next iteration
-            prior_prob_affix = estimate_affix_probability(affix_dict)
+            # prior_prob_affix = estimate_affix_probability(affix_dict)
 
-        return reliables, singles, reliable_type_dict
+        return reliables, singles, affix_dict
 
     def __strip_apostrophe(self, token):
         """Split before an apostrophe, ensuring it appears after any hyphen."""
@@ -288,13 +284,7 @@ class MorphAnalyzer():
         train_dict = self.__process_tokens(train_word_freq_list)
 
         # get paradigms with reliable affixes
-        reliable_affix_tuples, single_affix_tuples, temp_affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
-        # good to here!!!!!!
-
-        # change the keys from (affix, kind) to Affix(affix, kind)
-        affix_dict = {}
-        for aff, kind in temp_affix_dict:
-            affix_dict[Affix(aff, kind)] = temp_affix_dict[(aff, kind)]
+        reliable_affix_tuples, single_affix_tuples, affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
 
         print('| Generate tokens candidate segmentations')
         token_analyzer = TokenAnalyzer(
@@ -305,7 +295,6 @@ class MorphAnalyzer():
             self.param.UseTransRules
         )
         token_segs = token_analyzer.analyze_token_list(train_dict.keys())
-        # good to here for sure
 
         print('| Obtain statistics')
         probroots, _probaffix, probtrans = get_initial_parameters(token_segs)
@@ -313,21 +302,27 @@ class MorphAnalyzer():
 
         print('| Segment tokens')
         resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
+        # good to here for sure
 
         print('| Create paradigms')
         paradigm_dict, atomic_word_dict = create_paradigms(resolved_segs)
+        # good to here for pretty sure
 
         # print('| Recalculate seg probability')
         # token_seg_probs = calc_seg_probs(token_segs, probroots, probaffix, probtrans)
         # token_seg_prob_dict = dict(token_seg_probs) !!!!!!!
 
         print('| Calculate affix score')  # using the distribution of root lengths
-        affix_type_score = calc_affix_score_by_dist(paradigm_dict)
+        affix_type_score = calc_affix_score_by_dist(paradigm_dict, debug=False)
 
         if self.param.DoPruning:
             print('| Prune paradigms')
             paradigm_dict = prune_paradigms(
-                paradigm_dict, reliable_affix_tuples, affix_type_score, single_affix_tuples, train_dict,
+                paradigm_dict,
+                reliable_affix_tuples,
+                affix_type_score,
+                single_affix_tuples,
+                train_dict,
                 self.param.ExcludeUnreliable)
 
         print('| Get segmentation dictionary')
@@ -350,14 +345,26 @@ class MorphAnalyzer():
 
     def segment_token(self, token):
         """Use the currently trained model to segment the token."""
-        return self.__segment_token(
+        segs = list(self.__segment_token(
             token,
             self.__word_dict,
             self.__seg_dict,
             self.__ta,
             self.__probroots,
             self.__probaffix,
-            self.__probtrans)
+            self.__probtrans))
+
+        # convert affix objects to strings
+        for i, seg in enumerate(segs):
+            seg = list(seg)
+            for j, element in enumerate(seg):
+                if isinstance(element, Affix):
+                    if element.trans != '$':
+                        raise ValueError('wow! {}'.format(seg))
+                    seg[j] = element.affix
+            segs[i] = tuple(seg)
+
+        return tuple(segs)
 
     def segment_token_list(self, token_list):
         """Apply segment_token to each token in the list."""

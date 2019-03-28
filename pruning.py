@@ -79,14 +79,14 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
     root_affix_set_dict = {}  # to store roots with their affix set if they survive pruning
     pruned_words = []  # the "garbage can" of pruned words
     for word, derived_word_list in tqdm(paradigm_dict.items()):
-        affix_set = set([x[1] for x in derived_word_list])
-        affix_tuple = tuple(sorted(affix_set, key=lambda x: x.affix))
+        affix_set = {x[1] for x in derived_word_list}
+        affix_tuple = tuple(sorted(affix_set))
 
         # if the word isn't in the known list of words,
         if not word in word_dict:
             # prune it.
             for x in derived_word_list:
-                pruned_word, root, affix = x[0], word, x[2]
+                pruned_word, root, affix = x[0], word, x[1]
                 pruned_words.append((pruned_word, root, affix))
             continue
 
@@ -96,7 +96,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
         if exclude_unreliable and root_unreliable:
             # prune it.
             for x in derived_word_list:
-                pruned_word, root, affix = x[0], word, x[2]
+                pruned_word, root, affix = x[0], word, x[1]
                 pruned_words.append((pruned_word, root, affix))
             continue
         if len(affix_tuple) == 1:  # if this paradigm only has one affix,
@@ -108,7 +108,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
                 continue
             # Otherwise, prune it.
             # get the only possible derived word (since there's only one suffix to add)
-            pruned_word, root, affix = derived_word_list[0][0], word, derived_word_list[0][2]
+            pruned_word, root, affix = derived_word_list[0][0], word, derived_word_list[0][1]
             pruned_words.append((pruned_word, root, affix))
             continue
 
@@ -119,7 +119,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
         if not rem_set:
             # prune it.
             for x in derived_word_list:
-                pruned_word, root, affix = x[0], word, x[2]
+                pruned_word, root, affix = x[0], word, x[1]
                 pruned_words.append((pruned_word, root, affix))
             continue
 

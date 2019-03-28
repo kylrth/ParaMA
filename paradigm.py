@@ -25,9 +25,9 @@ def create_paradigms(token_structs):
             continue
         # this is a morphologically complex word
         if root in paradigm_dict:
-            paradigm_dict[root].append((word, affix.trans, affix.affix, affix.kind, morph))
+            paradigm_dict[root].append((word, affix, morph))
         else:
-            paradigm_dict[root] = [(word, affix.trans, affix.affix, affix.kind, morph)]
+            paradigm_dict[root] = [(word, affix, morph)]
     return paradigm_dict, atomic_word_dict
 
 
@@ -35,7 +35,9 @@ def get_paradigm_affix_sets(paradigm_dict):
     """For each root, collect the set of possible suffixes."""
     root_suffix_tuple_list = []
     for root, derived_word_list in paradigm_dict.items():
-        affix_set = {(x[2], x[3]) for x in derived_word_list}  # affixes are the second element; see create_paradigms
+        # affixes are the second element; see create_paradigms.
+        # we want to be transition-agnostic.
+        affix_set = {x[1].copy(with_transition=False) for x in derived_word_list}
         root_suffix_tuple_list.append((root, affix_set))
     return root_suffix_tuple_list
 
@@ -78,7 +80,7 @@ def stats_affix_sets(root_affix_set_list, word_dict):
         freq = word_dict[root] if root in word_dict else 1
         if not is_reliable_root(root, freq):
             continue  # ensure we trust the root to be a root
-        affix_tuple = tuple(sorted(affix_set, key=lambda x: x[0]))
+        affix_tuple = tuple(sorted(affix_set))
         if affix_tuple in affix_tuple_dict:
             affix_tuple_dict[affix_tuple].append((root, freq))
         else:
@@ -102,7 +104,7 @@ def filter_affix_tuple(affix_tuple_dict, min_support, min_tuple_size):
             continue  # productivity requirement
         long_affix_count = 0
         for affix in affix_tuple:
-            if len(affix[0]) > 1:
+            if len(affix) > 1:
                 long_affix_count += 1
         filtered_affix_tuple_dict[affix_tuple] = root_list
     return filtered_affix_tuple_dict
@@ -128,7 +130,7 @@ def get_single_affix_tuples(affix_type_dict, affix_tuple_dict):
         if len(affix_tuple) != 1:
             continue
         affix = affix_tuple[0]
-        if not affix in affix_type_dict:
+        if affix not in affix_type_dict:
             continue
         valid_singleton_dict[affix_tuple] = affix_tuple_dict[affix_tuple]
     return valid_singleton_dict

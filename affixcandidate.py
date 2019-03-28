@@ -88,7 +88,7 @@ def generate_candidates(words, min_stem_len, max_aff_len, min_affix_freq=1):
     return filter_affixes_by_freq(affixes, min_affix_freq)
 
 
-def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
+def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len, debug=False):
     """Calculate the expected stem length (confidence value) of a suffix.
 
     This is equation (1) in the paper.
@@ -99,7 +99,7 @@ def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
     for afx, stem_len_dist in affix_stem_len_dist:
         count_sum = 0.0
         len_sum = 0.0
-        for stem_len in range(min_stem_len, max_stem_len+1):
+        for stem_len in range(min_stem_len, max_stem_len + 1):
             count = epi
             if stem_len in stem_len_dist:
                 count += stem_len_dist[stem_len]
@@ -108,10 +108,13 @@ def calc_expected_stem_len(affix_stem_len_dist, min_stem_len, max_stem_len):
         len_exp = len_sum / count_sum
         afx_score = math.log10(1 + count_sum) * len_exp
         afx_len_exp.append((afx, afx_score, count_sum, len_exp))
+        if debug:
+            print(afx, stem_len_dist, afx_score, count_sum, len_exp)
+            input()
     return afx_len_exp
 
 
-def calc_affix_score_by_dist(paradigm_dict):
+def calc_affix_score_by_dist(paradigm_dict, debug=False):
     """Get the score for each affix by calculating the expected length of its root."""
     affix_root_len_dist = {}
     min_root_len = 100
@@ -121,27 +124,27 @@ def calc_affix_score_by_dist(paradigm_dict):
         root_len = len(root)
         min_root_len = min(min_root_len, root_len)  # eventually get the length of the smallest root
         max_root_len = max(max_root_len, root_len)  # eventually get the length of the longest root
-        for _word, affix, _morph in derived_word_list:
-            if (affix.affix, affix.kind) in affix_root_len_dist:
+        for _, affix, _ in derived_word_list:
+            affix_copy = affix.copy(with_transition=False)
+            if debug and affix.affix == 'a' and affix.kind == 'suf':
+                print(root_len, derived_word_list)
+                input()
+            if affix_copy in affix_root_len_dist:
                 # use the len_dist already calculated for this affix
-                root_len_dist = affix_root_len_dist[(affix.affix, affix.kind)]
-                if root_len in root_len_dist:
-                    root_len_dist[root_len] += 1
+                if root_len in affix_root_len_dist[affix_copy]:
+                    affix_root_len_dist[affix_copy][root_len] += 1
                 else:
-                    root_len_dist[root_len] = 1
-                # This wasn't here before, but I think it should be. (???)
-                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
+                    affix_root_len_dist[affix_copy][root_len] = 1
             else:
                 # use a len_dist of 1 for this affix
-                root_len_dist = {root_len:1}
-                affix_root_len_dist[(affix.affix, affix.kind)] = root_len_dist
+                affix_root_len_dist[affix_copy] = {root_len: 1}
 
     # sort by affix
-    affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0][0])
+    affix_root_len_dist = sorted(affix_root_len_dist.items(), key=lambda x: x[0])
     # calculate the expected stem length
-    affix_len_exp = calc_expected_stem_len(affix_root_len_dist, min_root_len, max_root_len)
+    affix_len_exp = calc_expected_stem_len(affix_root_len_dist, min_root_len, max_root_len, debug=debug)
     # use the stem length as a score for each affix
-    affix_score_dict = dict([(affix, score) for affix, score, _count_sum, _len_exp in affix_len_exp])
+    affix_score_dict = {affix: score for affix, score, _, _ in affix_len_exp}
     # return the score for each affix
     return affix_score_dict
 

@@ -48,7 +48,7 @@ def get_seg_dict_by_token_dict(token_seg_dict):
                     indx = 0
                     for i in range(len(rt_morphs)-1):
                         rt_morph = rt_morphs[i]
-                        morphs.append(wd_morph[indx:indx+len(rt_morph)])
+                        morphs.append(wd_morph[indx:indx + len(rt_morph)])
                         indx += len(rt_morph)
                     morphs.append(wd_morph[indx:])
                     morphs.append(wd_affix)

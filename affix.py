@@ -4,6 +4,11 @@ Created on 2018-12-15
 @author: kylrth
 """
 
+
+from functools import total_ordering
+
+
+@total_ordering  # define rich comparison ordering methods based on how I've defined __le__ and __eq__
 class Affix(object):
     """Defines an affix, and rules about how it is applied."""
 
@@ -47,6 +52,21 @@ class Affix(object):
     def __eq__(self, oth):
         """Return the equality of self to oth."""
         return isinstance(oth, Affix) and self.affix == oth.affix and self.kind == oth.kind and self.trans == oth.trans
+
+    def __le__(self, oth):
+        """Define the ordering of affixes.
+
+        Use the affix strings if possible, then kind strings, then transition strings.
+        """
+        if self.affix == oth.affix:
+            if self.kind == oth.kind:
+                return self.trans <= oth.trans
+            return self.kind <= oth.kind
+        return self.affix <= oth.affix
+
+    def __len__(self):
+        """Return the length of the affix."""
+        return len(self.affix)
 
     def __key(self):
         """Return a unique identifier for use of the class in sets."""
@@ -95,3 +115,15 @@ class Affix(object):
             return in_string + self.affix
 
         return in_string
+
+    def copy(self, with_transition=True):
+        """Return a copy of the affix.
+
+        Args:
+            with_transition (bool): whether to include the transition in the copy.
+        Returns:
+            (Affix): copied affix object.
+        """
+        if with_transition:
+            return Affix(self.affix, self.kind, self.trans)
+        return Affix(self.affix, self.kind)
