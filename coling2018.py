@@ -5,6 +5,8 @@ Created on Jun 11, 2018
 '''
 
 
+from test_util import dump_repr
+
 from param import Parameter
 from evaluation import evaluate_seg
 from morphanalyzer import MorphAnalyzer
@@ -98,8 +100,10 @@ def run_experiment(infile_train, infile_test_gold, params):
     print('| Segmenting test tokens...')
     # segment the test data
     test_segs_components = morph_analyzer.segment_token_list(test_list)
+    dump_repr(test_segs_components, 'test_segs_components')
     # get the segmentation listed for each word
     test_segs = [x[0] for x in test_segs_components]
+    dump_repr(test_segs, 'test_segs')
     print('| Evaluation...')
     # get precision, recall, and F1 scores
     evaluate_seg(test_gold, test_segs)

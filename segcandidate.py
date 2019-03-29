@@ -5,9 +5,11 @@ Created on Jun 11, 2018
 '''
 
 
+from functools import total_ordering
 from affix import Affix
 
 
+@total_ordering
 class SegStructure():
     """A class for storing an analysis of a certain token."""
 
@@ -24,6 +26,23 @@ class SegStructure():
         """Determine whether the word is atomic, as defined in section 3 of the paper."""
         return self.token == self.root
 
+    def __eq__(self, oth):
+        """Check equality of elements."""
+        return self.token == oth.token and \
+               self.morph == oth.morph and \
+               self.root == oth.root and \
+               self.affix == oth.affix
+
+    def __le__(self, oth):
+        """self <= oth"""
+        if self.token == oth.token:
+            if self.morph == oth.morph:
+                if self.root == oth.root:
+                    return self.affix <= oth.affix
+                return self.root <= oth.root
+            return self.morph <= oth.morph
+        return self.token <= oth.token
+
     def __repr__(self):
         """Produce a description of the object."""
         return 'SegStructure({}, {}, {}, {})'.format(
@@ -32,6 +51,13 @@ class SegStructure():
             self.root,
             self.affix
         )
+
+    def __key(self):
+        """Return a unique identifier for use of the class in sets."""
+        return (self.token, self.morph, self.root, self.affix)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class TokenAnalyzer:

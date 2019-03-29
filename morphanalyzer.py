@@ -5,6 +5,8 @@ Created on Jun 11, 2018
 '''
 
 
+from test_util import dump_repr
+
 from segcandidate import TokenAnalyzer
 from bayesian import get_initial_parameters, estimate_affix_probability, do_step1_segmention
 from bayesian import calc_seg_prob  # calc_seg_probs
@@ -56,18 +58,26 @@ class MorphAnalyzer():
             )
             print('--analyze possible segmentations for tokens')
             token_segs = ta.analyze_token_list(reliable_word_dict.keys())
+            dump_repr(token_segs, 'token_segs{}'.format(_))
 
             print('--get initial parameters')  # initial probabilities for roots, suffixes, and transitions
             probroots, probaffix, probtrans = get_initial_parameters(token_segs)
+            dump_repr(probroots, 'probroots{}'.format(_))
+            dump_repr(probaffix, 'probaffix{}'.format(_))
+            dump_repr(probtrans, 'probtrans{}'.format(_))
 
             print('--segment tokens')  # get the most likely segmentation from those listed as possible in `token_segs`
             resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
+            dump_repr(resolved_segs, 'resolved_segs{}'.format(_))
 
             print('--create paradigms')
             paradigm_dict, _atomic_word_dict = create_paradigms(resolved_segs)
+            dump_repr(paradigm_dict, 'paradigm_dict{}'.format(_))
+            dump_repr(_atomic_word_dict, '_atomic_word_dict{}'.format(_))
 
             print('--get paradigm suffix sets')  # get a set of suffixes for each root
             root_affix_set_list = get_paradigm_affix_sets(paradigm_dict)
+            dump_repr(root_affix_set_list, 'root_affix_set_list{}'.format(_))
 
             print('--prune paradigms')
             reliables, singles, affix_dict = get_reliable_affix_tuples(
@@ -77,6 +87,9 @@ class MorphAnalyzer():
                 self.param.MinParadigmAffix,
                 self.param.MinAffixFreq
             )
+            dump_repr(reliables, 'reliables{}'.format(_))
+            dump_repr(singles, 'singles{}'.format(_))
+            dump_repr(affix_dict, 'affix_dict{}'.format(_))
 
             # use these suffix probabilities at the next iteration
             # prior_prob_affix = estimate_affix_probability(affix_dict)
@@ -282,9 +295,13 @@ class MorphAnalyzer():
         """Create a model from the given word frequency list."""
         # create the word frequency dictionary, parsing hyphens and apostrophes as determined by self.params
         train_dict = self.__process_tokens(train_word_freq_list)
+        dump_repr(train_dict, 'train_dict')
 
         # get paradigms with reliable affixes
         reliable_affix_tuples, single_affix_tuples, affix_dict = self.__get_reliable_paradigm_affixes(train_dict)
+        dump_repr(reliable_affix_tuples, 'reliable_affix_tuples')
+        dump_repr(single_affix_tuples, 'single_affix_tuples')
+        dump_repr(affix_dict, 'affix_dict')
 
         print('| Generate tokens candidate segmentations')
         token_analyzer = TokenAnalyzer(
@@ -295,18 +312,24 @@ class MorphAnalyzer():
             self.param.UseTransRules
         )
         token_segs = token_analyzer.analyze_token_list(train_dict.keys())
+        dump_repr(token_segs, 'token_segs')
 
         print('| Obtain statistics')
         probroots, _probaffix, probtrans = get_initial_parameters(token_segs)
         probaffix = estimate_affix_probability(affix_dict)  # estimate probability based on new data
+        dump_repr(probroots, 'probroots')
+        dump_repr(_probaffix, '_probaffix')
+        dump_repr(probtrans, 'probtrans')
+        dump_repr(probaffix, 'probaffix')
 
         print('| Segment tokens')
         resolved_segs = do_step1_segmention(token_segs, probroots, probaffix, probtrans)
-        # good to here for sure
+        dump_repr(resolved_segs, 'resolved_segs')
 
         print('| Create paradigms')
         paradigm_dict, atomic_word_dict = create_paradigms(resolved_segs)
-        # good to here for pretty sure
+        dump_repr(paradigm_dict, 'paradigm_dict')
+        dump_repr(atomic_word_dict, 'atomic_word_dict')
 
         # print('| Recalculate seg probability')
         # token_seg_probs = calc_seg_probs(token_segs, probroots, probaffix, probtrans)
@@ -314,6 +337,7 @@ class MorphAnalyzer():
 
         print('| Calculate affix score')  # using the distribution of root lengths
         affix_type_score = calc_affix_score_by_dist(paradigm_dict, debug=False)
+        dump_repr(affix_type_score, 'affix_type_score')
 
         if self.param.DoPruning:
             print('| Prune paradigms')
@@ -324,17 +348,20 @@ class MorphAnalyzer():
                 single_affix_tuples,
                 train_dict,
                 self.param.ExcludeUnreliable)
+            dump_repr(paradigm_dict, 'pruned_paradigm_dict')
 
         print('| Get segmentation dictionary')
         # use the paradigms to get a map from words to their segmentation structure
         seg_dict = get_seg_dict_by_paradigms(paradigm_dict)
         # add the atomic words to the list
         seg_dict.update(atomic_word_dict)
+        dump_repr(seg_dict, 'seg_dict')
 
         # combine reliable affix tuples and single affix tuples into one dictionary (Why???)
         affix_tuple_dict = {}
         affix_tuple_dict.update(reliable_affix_tuples)
         affix_tuple_dict.update(single_affix_tuples)
+        dump_repr(affix_tuple_dict, 'affix_tuple_dict')
 
         self.__word_dict = train_dict
         self.__seg_dict = seg_dict
@@ -359,8 +386,8 @@ class MorphAnalyzer():
             seg = list(seg)
             for j, element in enumerate(seg):
                 if isinstance(element, Affix):
-                    if element.trans != '$':
-                        raise ValueError('wow! {}'.format(seg))
+                    # if element.trans != '$':
+                    #     raise ValueError('wow! {}'.format(seg))
                     seg[j] = element.affix
             segs[i] = tuple(seg)
 

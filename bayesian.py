@@ -5,6 +5,9 @@ Created on Jun 11, 2018
 '''
 
 
+from test_util import dump_repr
+
+
 def feature(root, affix, kind):
     """Return the last char of root and the first char of affix, if the affix is a suffix. Otherwise, return the last
     char of affix and the first char of root.
@@ -39,14 +42,14 @@ def get_initial_parameters(token_segs):
             else:
                 estems[root] = avg_prob
 
-            affix = ts.affix.affix
-            kind = ts.affix.kind
-            if (affix, kind) in eaffix:
-                eaffix[(affix, kind)] += avg_prob
+            affix = ts.affix.copy(with_transition=False)
+            if affix in eaffix:
+                eaffix[affix] += avg_prob
             else:
-                eaffix[(affix, kind)] = avg_prob
+                eaffix[affix] = avg_prob
 
             trans = ts.affix.trans
+            kind = ts.affix.kind
             ftrans = feature(root, ts.affix, kind)
 
             if (trans, ftrans, kind) in etrans:
@@ -83,13 +86,13 @@ def calc_seg_prob(ts, probroots, probaffix, probtrans):
     This is equation (3) from the paper.
     """
     root = ts.root
-    affix = ts.affix.affix
+    affix = ts.affix.copy(with_transition=False)
     trans = ts.affix.trans
     kind = ts.affix.kind
     feat = feature(root, ts.affix, kind)
     score = 0.0
-    if root in probroots and (affix, kind) in probaffix and (trans, feat, kind) in probtrans:
-        score = probroots[root] * probaffix[(affix, kind)] * probtrans[(trans, feat, kind)]
+    if root in probroots and affix in probaffix and (trans, feat, kind) in probtrans:
+        score = probroots[root] * probaffix[affix] * probtrans[(trans, feat, kind)]
     return score
 
 
@@ -113,15 +116,18 @@ def calc_seg_probs(token_segs, probroots, probaffix, probtrans):
 def do_step1_segmention(token_segs, probroots, probaffix, probtrans):
     """Find the most likely token segmentation among those listed for each token."""
     resolved_segs = []
+    all_scores = set()
     for segs in token_segs:
         max_score = -1.0
         best_ts = None
         for ts in segs:
             score = calc_seg_prob(ts, probroots, probaffix, probtrans)
+            all_scores.add((ts, score))
             if score > max_score:
                 best_ts = ts
                 max_score = score
         resolved_segs.append(best_ts)
+    dump_repr(list(sorted(all_scores)), 'all_scores')
     return resolved_segs
 
 
