@@ -5,6 +5,8 @@ Created on Jun 11, 2018
 '''
 
 
+from test_util import dump_repr
+
 from tqdm import tqdm
 from reliableroot import is_reliable_root
 
@@ -77,9 +79,9 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
     """
     pruned_paradigm_dict = {}  # to stored paradigms that survive pruning
     root_affix_set_dict = {}  # to store roots with their affix set if they survive pruning
-    pruned_words = []  # the "garbage can" of pruned words
+    pruned_words = set()  # the "garbage can" of pruned words
     for word, derived_word_list in tqdm(paradigm_dict.items()):
-        affix_set = {x[1] for x in derived_word_list}
+        affix_set = {x[1].copy(with_transition=False) for x in derived_word_list}
         affix_tuple = tuple(sorted(affix_set))
 
         # if the word isn't in the known list of words,
@@ -87,7 +89,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
             # prune it.
             for x in derived_word_list:
                 pruned_word, root, affix = x[0], word, x[1]
-                pruned_words.append((pruned_word, root, affix))
+                pruned_words.add((pruned_word, root, affix, 'word not in word_dict'))
             continue
 
         freq = word_dict[word]
@@ -97,7 +99,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
             # prune it.
             for x in derived_word_list:
                 pruned_word, root, affix = x[0], word, x[1]
-                pruned_words.append((pruned_word, root, affix))
+                pruned_words.add((pruned_word, root, affix, 'unreliable root'))
             continue
         if len(affix_tuple) == 1:  # if this paradigm only has one affix,
             # and if this paradigm was found in single_affix_tuples and the root is unreliable,
@@ -109,7 +111,7 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
             # Otherwise, prune it.
             # get the only possible derived word (since there's only one suffix to add)
             pruned_word, root, affix = derived_word_list[0][0], word, derived_word_list[0][1]
-            pruned_words.append((pruned_word, root, affix))
+            pruned_words.add((pruned_word, root, affix, 'one affix, not in single_affix_tuples'))
             continue
 
         # prune unlikely affixes
@@ -120,22 +122,25 @@ def prune_paradigms(paradigm_dict, reliable_affix_tuples, affix_type_score, sing
             # prune it.
             for x in derived_word_list:
                 pruned_word, root, affix = x[0], word, x[1]
-                pruned_words.append((pruned_word, root, affix))
+                pruned_words.add((pruned_word, root, affix, 'not rem_set'))
             continue
 
         # Otherwise, some affixes were likely. Create a new derived_word_list using only the pruned affixes.
         derived_word_list_1 = []
         for derived_word, affix, morph in derived_word_list:
+            trans = affix.trans
+            affix.trans = '$'
             if affix in rem_set:  # If the affix was likely,
                 # add it.
-                derived_word_list_1.append((derived_word, affix, morph))
+                derived_word_list_1.append((derived_word, trans, affix, morph))
                 continue
             # Otherwise, prune it.
-            pruned_words.append((derived_word, word, affix))
+            pruned_words.add((derived_word, word, affix, 'other affixes not in rem_set'))
 
         if derived_word_list_1:
             # record the transformations that survived,
             pruned_paradigm_dict[word] = derived_word_list_1
             # as well as the set of likely affixes.
             root_affix_set_dict[word] = rem_set
+    dump_repr(pruned_words, 'pruned_words')
     return pruned_paradigm_dict

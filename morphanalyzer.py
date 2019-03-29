@@ -203,8 +203,6 @@ class MorphAnalyzer():
 
         # get possible segmentations
         segs = ta.analyze_token(token)
-        # print(segs)
-        # input()
 
         # find the segment with the highest probability
         max_prob = 0.0
@@ -395,6 +393,11 @@ class MorphAnalyzer():
 
     def segment_token_list(self, token_list):
         """Apply segment_token to each token in the list."""
+        dump_repr(self.__word_dict, '__word_dict')
+        dump_repr(self.__seg_dict, '__seg_dict')
+        dump_repr(self.__probroots, '__probroots')
+        dump_repr(self.__probaffix, '__probaffix')
+        dump_repr(self.__probtrans, '__probtrans')
         token_seg_list = []
         for token in token_list:
             token_seg_list.append(self.segment_token(token))

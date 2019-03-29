@@ -107,7 +107,8 @@ def get_seg_dict_by_paradigms(paradigm_dict):
     # create a mapping from tokens to the transformation that creates them
     token_seg_dict = {}
     for root, word_list in paradigm_dict.items():
-        for word, affix, stem in word_list:
+        for word, trans, affix, stem in word_list:
+            affix.trans = trans
             token_seg_dict[word] = (stem, root, affix)
     # convert to a mapping from tokens to their segmentation info in a hierarchical structure
     seg_dict = get_seg_dict_by_token_dict(token_seg_dict)
